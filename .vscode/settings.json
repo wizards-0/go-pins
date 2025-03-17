@@ -1,9 +1,17 @@
 {
     "cSpell.words": [
+        "coverprofile",
+        "davecgh",
+        "difflib",
+        "gopkg",
         "jmoiron",
         "mattn",
+        "pinutil",
+        "pmezard",
+        "Rowx",
         "sqlx",
         "stretchr",
-        "VARCHAR"
+        "VARCHAR",
+        "webutil"
     ]
 }

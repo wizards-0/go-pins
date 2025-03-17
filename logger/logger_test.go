@@ -3,7 +3,6 @@ package logger
 import (
 	"bytes"
 	"io"
-	"log"
 	"testing"
 	"time"
 
@@ -16,8 +15,7 @@ var testMsg = "Test log"
 
 func setup() {
 	w := io.Writer(&buf)
-	outLog = log.New(w, "", log.LstdFlags)
-	errLog = log.New(w, "", log.LstdFlags)
+	SetWriter(w, w, w, w)
 }
 
 func getDateString() string {
@@ -38,28 +36,19 @@ func getErrorLog(msg string) string {
 }
 
 func TestLoggerInit(t *testing.T) {
-	defer func() { hasInitialized = false }()
 	assert := assert.New(t)
 	setup()
-	date := getDateString()
-
+	assert.Equal("Info", GetLogLevel())
 	Trace(testMsg)
 	logMsg, _ := io.ReadAll(logReader)
-	assert.Equal(date+" ERROR: Logger not initialized. Call one of logger's init func before use\n", string(logMsg))
-
-	Init(LOG_LEVEL_TRACE)
-	Init(LOG_LEVEL_TRACE)
-	logMsg, _ = io.ReadAll(logReader)
-	assert.Equal(date+" ERROR: Logger already initialized with level Trace\n", string(logMsg))
-
+	assert.Equal("", string(logMsg))
 }
 
 func TestLoggerLevelTrace(t *testing.T) {
-	defer func() { hasInitialized = false }()
 	assert := assert.New(t)
 	setup()
 
-	Init(LOG_LEVEL_TRACE)
+	SetLogLevel(LOG_LEVEL_TRACE)
 
 	Trace(testMsg)
 	logMsg, _ := io.ReadAll(logReader)
@@ -79,11 +68,10 @@ func TestLoggerLevelTrace(t *testing.T) {
 }
 
 func TestLoggerLevelDebug(t *testing.T) {
-	defer func() { hasInitialized = false }()
 	assert := assert.New(t)
 	setup()
 
-	Init(LOG_LEVEL_DEBUG)
+	SetLogLevel(LOG_LEVEL_DEBUG)
 
 	Trace(testMsg)
 	logMsg, _ := io.ReadAll(logReader)
@@ -103,11 +91,10 @@ func TestLoggerLevelDebug(t *testing.T) {
 }
 
 func TestLoggerLevelInfo(t *testing.T) {
-	defer func() { hasInitialized = false }()
 	assert := assert.New(t)
 	setup()
 
-	Init(LOG_LEVEL_INFO)
+	SetLogLevel(LOG_LEVEL_INFO)
 
 	Trace(testMsg)
 	logMsg, _ := io.ReadAll(logReader)
@@ -127,11 +114,10 @@ func TestLoggerLevelInfo(t *testing.T) {
 }
 
 func TestLoggerLevelError(t *testing.T) {
-	defer func() { hasInitialized = false }()
 	assert := assert.New(t)
 	setup()
 
-	Init(LOG_LEVEL_ERROR)
+	SetLogLevel(LOG_LEVEL_ERROR)
 
 	Trace(testMsg)
 	logMsg, _ := io.ReadAll(logReader)
@@ -151,11 +137,10 @@ func TestLoggerLevelError(t *testing.T) {
 }
 
 func TestLoggerLevelNone(t *testing.T) {
-	defer func() { hasInitialized = false }()
 	assert := assert.New(t)
 	setup()
 
-	Init(LOG_LEVEL_NONE)
+	SetLogLevel(LOG_LEVEL_NONE)
 
 	Trace(testMsg)
 	logMsg, _ := io.ReadAll(logReader)

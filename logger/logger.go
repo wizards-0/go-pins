@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"io"
 	"log"
 	"os"
 )
@@ -17,66 +18,72 @@ const (
 
 var levelNames = [5]string{"Trace", "Debug", "Info", "Error", "None"}
 
-func stub(value any) {
+func stub(value ...any) {
 	//NOOP if log level not applicable
 }
-func initError(value any) {
-	errLog.Println("ERROR: Logger not initialized. Call one of logger's init func before use")
+
+func consoleTrace(values ...any) {
+	traceLog.Println(values...)
 }
-func consoleTrace(value any) {
-	outLog.Printf("TRACE: %v\n", value)
+func consoleDebug(values ...any) {
+	debugLog.Println(values...)
 }
-func consoleDebug(value any) {
-	outLog.Printf("DEBUG: %v\n", value)
+func consoleInfo(values ...any) {
+	infoLog.Println(values...)
 }
-func consoleInfo(value any) {
-	outLog.Printf("INFO: %v\n", value)
-}
-func consoleError(value any) {
-	errLog.Printf("ERROR: %v\n", value)
+func consoleError(values ...any) {
+	errLog.Println(values...)
 }
 
-var Trace func(any) = initError
-var Debug func(any) = initError
-var Info func(any) = initError
-var Error func(any) = initError
+var Trace func(...any) = stub
+var Debug func(...any) = stub
+var Info func(...any) = consoleInfo
+var Error func(...any) = consoleError
 
-var hasInitialized = false
-var level LogLevel = LOG_LEVEL_NONE
-var outLog *log.Logger = log.New(os.Stdout, "", log.LstdFlags)
-var errLog *log.Logger = log.New(os.Stderr, "", log.LstdFlags)
+var level LogLevel = LOG_LEVEL_INFO
+var traceLog *log.Logger = log.New(os.Stdout, "TRACE: ", log.LstdFlags|log.Lmsgprefix)
+var debugLog *log.Logger = log.New(os.Stdout, "DEBUG: ", log.LstdFlags|log.Lmsgprefix)
+var infoLog *log.Logger = log.New(os.Stdout, "INFO: ", log.LstdFlags|log.Lmsgprefix)
+var errLog *log.Logger = log.New(os.Stderr, "ERROR: ", log.LstdFlags|log.Lmsgprefix)
 
-func Init(logLevel LogLevel) {
-	if !hasInitialized {
-		level = logLevel
+func SetWriter(
+	traceWriter io.Writer,
+	debugWriter io.Writer,
+	infoWriter io.Writer,
+	errWriter io.Writer,
+) {
+	traceLog = log.New(traceWriter, "TRACE: ", log.LstdFlags|log.Lmsgprefix)
+	debugLog = log.New(debugWriter, "DEBUG: ", log.LstdFlags|log.Lmsgprefix)
+	infoLog = log.New(infoWriter, "INFO: ", log.LstdFlags|log.Lmsgprefix)
+	errLog = log.New(errWriter, "ERROR: ", log.LstdFlags|log.Lmsgprefix)
+}
 
-		if logLevel <= LOG_LEVEL_ERROR {
-			Error = consoleError
-		} else {
-			Error = stub
-		}
+func SetLogLevel(logLevel LogLevel) {
 
-		if logLevel <= LOG_LEVEL_INFO {
-			Info = consoleInfo
-		} else {
-			Info = stub
-		}
+	level = logLevel
 
-		if logLevel <= LOG_LEVEL_DEBUG {
-			Debug = consoleDebug
-		} else {
-			Debug = stub
-		}
-
-		if logLevel <= LOG_LEVEL_TRACE {
-			Trace = consoleTrace
-		} else {
-			Trace = stub
-		}
-
-		hasInitialized = true
+	if logLevel <= LOG_LEVEL_ERROR {
+		Error = consoleError
 	} else {
-		Error("Logger already initialized with level " + GetLogLevel())
+		Error = stub
+	}
+
+	if logLevel <= LOG_LEVEL_INFO {
+		Info = consoleInfo
+	} else {
+		Info = stub
+	}
+
+	if logLevel <= LOG_LEVEL_DEBUG {
+		Debug = consoleDebug
+	} else {
+		Debug = stub
+	}
+
+	if logLevel <= LOG_LEVEL_TRACE {
+		Trace = consoleTrace
+	} else {
+		Trace = stub
 	}
 }
 

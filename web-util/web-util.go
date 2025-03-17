@@ -2,32 +2,88 @@ package webutil
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
-	"log"
 	"net/http"
 	"net/url"
 
 	"github.com/wizards-0/go-pins/logger"
 )
 
-func GetHttpHandleFunc(fn func(url.Values, string) (any, error)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		reqBodyBytes, err := io.ReadAll(r.Body)
-		if err != nil {
+/*
+- Request Types
+  - GET
+  - POST
+
+- Input Options
+  - Query Param
+  - Path Param
+  - Request Body (w/ Query | Path Param)
+
+- Output Options
+  - json
+  - status only
+  - error
+  - string
+*/
+type HttpResponse struct {
+	Status int
+	Body   any
+	Error  error
+}
+
+type ErrorResponse struct {
+	Body         any    `json:"body"`
+	ErrorMessage string `json:"errorMessage"`
+}
+
+func RegisterPost(pattern string, reqBody *any, fn func(reqBody *any) HttpResponse) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(reqBody); err != nil {
 			logger.Error(err)
-			//TODO: Add global error handling logic, return proper status code
-		} else {
-			reqBody := string(reqBodyBytes)
-			fmt.Println()
-			queryParams := r.URL.Query()
-			resp, handlerError := fn(queryParams, reqBody)
-			if handlerError != nil {
-				log.Println(handlerError)
-			} else if resp != nil {
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(resp)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(ErrorResponse{ErrorMessage: err.Error()})
+		}
+		resp := fn(reqBody)
+		if resp.Error != nil {
+			if resp.Status != 0 {
+				w.WriteHeader(resp.Status)
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
 			}
+			json.NewEncoder(w).Encode(ErrorResponse{ErrorMessage: resp.Error.Error()})
+		} else {
+			if resp.Status != 0 {
+				w.WriteHeader(resp.Status)
+			} else {
+				w.WriteHeader(http.StatusOK)
+			}
+			json.NewEncoder(w).Encode(resp.Body)
 		}
 	}
+	http.HandleFunc(pattern, handler)
+}
+
+func RegisterGet(pattern string, fn func(queryParams url.Values, pathParams ...any) HttpResponse, pathParamNames ...string) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		pathParams := []any{}
+		for _, pName := range pathParamNames {
+			pathParams = append(pathParams, r.PathValue(pName))
+		}
+		resp := fn(r.URL.Query(), pathParams...)
+		if resp.Error != nil {
+			if resp.Status != 0 {
+				w.WriteHeader(resp.Status)
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			json.NewEncoder(w).Encode(ErrorResponse{ErrorMessage: resp.Error.Error()})
+		} else {
+			if resp.Status != 0 {
+				w.WriteHeader(resp.Status)
+			} else {
+				w.WriteHeader(http.StatusOK)
+			}
+			json.NewEncoder(w).Encode(resp.Body)
+		}
+	}
+	http.HandleFunc(pattern, handler)
 }
