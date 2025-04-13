@@ -5,6 +5,8 @@
         "difflib",
         "gopkg",
         "jmoiron",
+        "jojo",
+        "jsonutil",
         "mattn",
         "pinutil",
         "pmezard",
