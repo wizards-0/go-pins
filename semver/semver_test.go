@@ -22,7 +22,7 @@ func TestCompareSemver(t *testing.T) {
 		"1.2-alpha",
 	}
 	sort.Slice(verArr, func(i1, i2 int) bool {
-		return CompareSemver(verArr[i1], verArr[i2])
+		return CompareSemver(verArr[i1], verArr[i2], ".")
 	})
 
 	sortedVerArr := []string{

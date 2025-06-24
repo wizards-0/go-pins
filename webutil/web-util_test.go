@@ -21,8 +21,15 @@ var queryParamsTester = func(q map[string]string, pathParams map[string]string) 
 	}
 }
 
-func TestQueryParams(t *testing.T) {
+var log = bytes.Buffer{}
+
+func setup() {
 	logger.SetLogLevel(logger.LOG_LEVEL_DEBUG)
+	logger.SetWriter(&log, &log, &log, &log)
+}
+
+func TestQueryParams(t *testing.T) {
+	setup()
 	assert := assert.New(t)
 
 	mux := http.NewServeMux()
@@ -55,7 +62,7 @@ var pathParamTester = func(q map[string]string, pathParams map[string]string) Ht
 }
 
 func TestPathParams(t *testing.T) {
-	logger.SetLogLevel(logger.LOG_LEVEL_DEBUG)
+	setup()
 	assert := assert.New(t)
 
 	mux := http.NewServeMux()
@@ -90,7 +97,7 @@ func TestPathParamsValidation(t *testing.T) {
 		assert.NotNil(t, r)
 	}()
 	RegisterParamsHandler(mux, "/pathParamsMismatch/{id}/{name}/", pathParamTester, "id")
-	logger.SetLogLevel(logger.LOG_LEVEL_DEBUG)
+	setup()
 }
 
 type RequestBody struct {
@@ -103,7 +110,7 @@ var requestBodyFactory = func() *RequestBody {
 }
 
 func TestRequestBody(t *testing.T) {
-	logger.SetLogLevel(logger.LOG_LEVEL_DEBUG)
+	setup()
 	assert := assert.New(t)
 
 	var requestBodyTester = func(body *RequestBody) HttpResponse {
@@ -166,11 +173,11 @@ func TestRequestBody(t *testing.T) {
 	resp, _ = http.Post(baseUrl, CONTENT_TYPE_JSON, &buf)
 	assert.Equal(http.StatusBadRequest, resp.StatusCode)
 	// }
-	logger.SetLogLevel(logger.LOG_LEVEL_DEBUG)
+	setup()
 }
 
 func TestRequestBodyAndParams(t *testing.T) {
-	logger.SetLogLevel(logger.LOG_LEVEL_DEBUG)
+	setup()
 	assert := assert.New(t)
 
 	var requestBodyTester = func(reqBody *RequestBody, queryParams map[string]string, pathParams map[string]string) HttpResponse {
@@ -217,7 +224,7 @@ func TestRequestBodyAndParams(t *testing.T) {
 	resp, _ := http.Post(baseUrl, CONTENT_TYPE_JSON, &buf)
 	assert.Equal(http.StatusBadRequest, resp.StatusCode)
 
-	logger.SetLogLevel(logger.LOG_LEVEL_DEBUG)
+	setup()
 }
 
 type JsonHttpResponse struct {
@@ -229,7 +236,7 @@ type JsonHttpResponse struct {
 // API Response
 
 func TestAPIResponse(t *testing.T) {
-	logger.SetLogLevel(logger.LOG_LEVEL_DEBUG)
+	setup()
 	assert := assert.New(t)
 
 	var newResp = func() *JsonHttpResponse {

@@ -89,7 +89,7 @@ func handleResponse(w http.ResponseWriter, resp HttpResponse) {
 			w.WriteHeader(http.StatusOK)
 		}
 		// Only fails for exotic values like channels, functions. But who would return that from a rest endpoint, right? ... right?
-		// For values like graphs with cycles, it straight up crashes, lol. So yeah, don't that, terrible.
+		// For values like graphs with cycles, it straight up crashes, lol. So yeah, don't do that, terrible.
 		_ = json.NewEncoder(w).Encode(resp.Body)
 	}
 }

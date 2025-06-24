@@ -4,6 +4,7 @@
         "davecgh",
         "difflib",
         "gopkg",
+        "GOPROXY",
         "jmoiron",
         "jojo",
         "jsonutil",

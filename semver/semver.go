@@ -5,9 +5,10 @@ import (
 	"strings"
 )
 
-func CompareSemver(v1 string, v2 string) bool {
-	v1Parts := strings.Split(v1, ".")
-	v2Parts := strings.Split(v2, ".")
+// Returns true if v1 is less than or equal to v2
+func CompareSemver(v1 string, v2 string, separator string) bool {
+	v1Parts := strings.Split(v1, separator)
+	v2Parts := strings.Split(v2, separator)
 	partsCount := max(len(v1Parts), len(v2Parts))
 	for i := range partsCount {
 		v1Part := getVerPart(&v1Parts, i)
