@@ -1,4 +1,4 @@
-//v0.1.0
+//v0.1.1
 module github.com/wizards-0/go-pins
 
 go 1.24.0
