@@ -10,6 +10,7 @@ mainVersionNew="${mainVersionParts[0]}.${mainVersionParts[1]}.$mainVersionPatchN
 mainVersionLineNew="main.version=$mainVersionNew"
 sed -i "s/${mainVersionLine}/${mainVersionLineNew}/g" ./version.ini
 git commit -a -u -m "Automated commit for version increment"
+git push origin master
 git tag $mainVersionNew
 git push origin $mainVersionNew
 GOPROXY=proxy.golang.org go list -m github.com/wizards-0/go-pins@$mainVersionNew
