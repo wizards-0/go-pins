@@ -30,7 +30,7 @@ func setup() {
 	logger.SetLogLevel(logger.LOG_LEVEL_DEBUG)
 	db = getDbConnection()
 	mDao = dao.NewMigrationDao(db)
-	mRun = NewMigrator(mDao)
+	mRun = New(db)
 }
 
 func tearDown() {
@@ -84,7 +84,7 @@ func TestInvalidPathError(t *testing.T) {
 func TestGetMigrationLogError(t *testing.T) {
 	setup()
 	db.Close()
-	err := mRun.(migrator).executeMigrationQueries([]types.Migration{q2, q1})
+	err := mRun.(*migrator).executeMigrationQueries([]types.Migration{q2, q1})
 	assert.ErrorContains(t, err, "error while executing")
 }
 
@@ -92,9 +92,9 @@ func TestInsertLogDbError(t *testing.T) {
 	setup()
 	defer tearDown()
 	mockDao := mocks.NewMockMigrationDao(t)
-	mRun = migrator{dao: mockDao}
+	mRun = newMigrator(mockDao)
 	mockDao.EXPECT().InsertMigrationLog(mock.Anything).Return(-1, errors.New(""))
-	err := mRun.(migrator).executeQuery(q1, hashQuery(q1.Query))
+	err := mRun.(*migrator).executeQuery(q1, hashQuery(q1.Query))
 	assert.ErrorContains(t, err, "error while inserting")
 }
 
@@ -151,7 +151,7 @@ func TestExecQueryError(t *testing.T) {
 	defer tearDown()
 
 	mockDao := mocks.NewMockMigrationDao(t)
-	mRun = migrator{dao: mockDao}
+	mRun = newMigrator(mockDao)
 
 	mockDao.EXPECT().SetupMigrationTable().RunAndReturn(func() error {
 		mDao.SetupMigrationTable()
@@ -179,7 +179,7 @@ func TestExecQuerySuccessStatusUpdateError(t *testing.T) {
 	defer tearDown()
 
 	mockDao := mocks.NewMockMigrationDao(t)
-	mRun = migrator{dao: mockDao}
+	mRun = newMigrator(mockDao)
 
 	mockDao.EXPECT().SetupMigrationTable().RunAndReturn(func() error {
 		mDao.SetupMigrationTable()
@@ -206,7 +206,7 @@ func TestExecQueryFailureStatusUpdateError(t *testing.T) {
 	defer tearDown()
 
 	mockDao := mocks.NewMockMigrationDao(t)
-	mRun = migrator{dao: mockDao}
+	mRun = newMigrator(mockDao)
 
 	mockDao.EXPECT().SetupMigrationTable().RunAndReturn(func() error {
 		mDao.SetupMigrationTable()
@@ -231,7 +231,7 @@ func TestRollbackFetchError(t *testing.T) {
 	defer tearDown()
 	mRun.Migrate([]types.Migration{q1})
 	mockDao := mocks.NewMockMigrationDao(t)
-	mRun = migrator{dao: mockDao}
+	mRun = newMigrator(mockDao)
 
 	mockDao.EXPECT().GetMigrationLogs().Return(nil, errors.New("fetch error"))
 
@@ -245,7 +245,7 @@ func TestRollbackExecError(t *testing.T) {
 	defer tearDown()
 	mRun.Migrate([]types.Migration{q1})
 	mockDao := mocks.NewMockMigrationDao(t)
-	mRun = migrator{dao: mockDao}
+	mRun = newMigrator(mockDao)
 
 	mockDao.EXPECT().GetMigrationLogs().RunAndReturn(func() ([]types.MigrationLog, error) {
 		return mDao.GetMigrationLogs()
@@ -262,7 +262,7 @@ func TestRollbackDeleteLogError(t *testing.T) {
 	defer tearDown()
 	mRun.Migrate([]types.Migration{q1})
 	mockDao := mocks.NewMockMigrationDao(t)
-	mRun = migrator{dao: mockDao}
+	mRun = newMigrator(mockDao)
 
 	mockDao.EXPECT().GetMigrationLogs().RunAndReturn(func() ([]types.MigrationLog, error) {
 		return mDao.GetMigrationLogs()

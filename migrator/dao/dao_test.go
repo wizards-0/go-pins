@@ -80,7 +80,7 @@ func TestGetMigrationLogIdError(t *testing.T) {
 	assert := assert.New(t)
 	setup()
 	db.Close()
-	_, err := dao.(migrationDao).getMigrationLogId(types.MigrationLog{})
+	_, err := dao.(*migrationDao).getMigrationLogId(types.MigrationLog{})
 	assert.ErrorContains(err, "error in database while getting migration log id")
 }
 

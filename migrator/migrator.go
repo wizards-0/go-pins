@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/wizards-0/go-pins/logger"
 	"github.com/wizards-0/go-pins/migrator/dao"
 	"github.com/wizards-0/go-pins/migrator/types"
@@ -20,8 +21,14 @@ type Migrator interface {
 	Rollback(ver string) error
 }
 
-func NewMigrator(dao dao.MigrationDao) Migrator {
-	return migrator{
+func New(db *sqlx.DB) Migrator {
+	return &migrator{
+		dao: dao.NewMigrationDao(db),
+	}
+}
+
+func newMigrator(dao dao.MigrationDao) Migrator {
+	return &migrator{
 		dao: dao,
 	}
 }
@@ -30,11 +37,11 @@ type migrator struct {
 	dao dao.MigrationDao
 }
 
-func (m migrator) GetMigrationLogs() ([]types.MigrationLog, error) {
+func (m *migrator) GetMigrationLogs() ([]types.MigrationLog, error) {
 	return m.dao.GetMigrationLogs()
 }
 
-func (m migrator) RunMigrationsFromDirectory(path string) error {
+func (m *migrator) RunMigrationsFromDirectory(path string) error {
 	mArr, err := parseDirectory(path)
 	if err != nil {
 		return fmt.Errorf("error while running migrations from path %v\n%w", path, err)
@@ -42,14 +49,14 @@ func (m migrator) RunMigrationsFromDirectory(path string) error {
 	return m.Migrate(mArr)
 }
 
-func (m migrator) Migrate(mArr []types.Migration) error {
+func (m *migrator) Migrate(mArr []types.Migration) error {
 	if setupErr := m.dao.SetupMigrationTable(); setupErr != nil {
 		return fmt.Errorf("error while running migrations\n%w", setupErr)
 	}
 	return m.executeMigrationQueries(mArr)
 }
 
-func (m migrator) Rollback(ver string) error {
+func (m *migrator) Rollback(ver string) error {
 	mLogs, fetchErr := m.GetMigrationLogs()
 	if fetchErr != nil {
 		return fetchErr
@@ -116,7 +123,7 @@ func (migrator migrator) executeQuery(m types.Migration, hash string) error {
 	return nil
 }
 
-func (m migrator) getMigrationVersionMap() (map[string]types.MigrationLog, error) {
+func (m *migrator) getMigrationVersionMap() (map[string]types.MigrationLog, error) {
 	mLogs, err := m.dao.GetMigrationLogs()
 	if err != nil {
 		return nil, fmt.Errorf("error while getting version migrations map\n %w", err)
@@ -144,7 +151,7 @@ func validateHash(m types.MigrationLog, hash string) error {
 	return nil
 }
 
-func (m migrator) insertMigrationLog(q types.Migration, hash string) (types.MigrationLog, error) {
+func (m *migrator) insertMigrationLog(q types.Migration, hash string) (types.MigrationLog, error) {
 	mLog := types.MigrationLog{}
 	mLog.Migration = q
 	mLog.Status = types.MIGRATION_STATUS_STARTED
