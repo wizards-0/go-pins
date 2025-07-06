@@ -38,3 +38,37 @@ func TestCompareSemver(t *testing.T) {
 
 	assert.Equal(sortedVerArr, verArr)
 }
+
+func TestBadData(t *testing.T) {
+	assert := assert.New(t)
+	logger.SetLogLevel(logger.LOG_LEVEL_DEBUG)
+	verArr := []string{
+		"yo",
+		"ehe",
+	}
+	sort.Slice(verArr, func(i1, i2 int) bool {
+		return CompareSemver(verArr[i1], verArr[i2], ".")
+	})
+
+	sortedVerArr := []string{
+		"ehe",
+		"yo",
+	}
+
+	assert.Equal(sortedVerArr, verArr)
+
+	verArr = []string{
+		"yo",
+		"2",
+	}
+	sort.Slice(verArr, func(i1, i2 int) bool {
+		return CompareSemver(verArr[i1], verArr[i2], ".")
+	})
+
+	sortedVerArr = []string{
+		"2",
+		"yo",
+	}
+
+	assert.Equal(sortedVerArr, verArr)
+}

@@ -19,6 +19,8 @@ import (
 var TYPE_MIGRATION_LOG = mock.AnythingOfType("types.MigrationLog")
 var TYPE_MIGRATION = mock.AnythingOfType("types.Migration")
 
+const VALID_PATH = "../resources/test/migrations/valid"
+
 var buf = bytes.Buffer{}
 var db *sqlx.DB
 var mDao dao.MigrationDao
@@ -60,7 +62,7 @@ func TestMigrationFromDir(t *testing.T) {
 	setup()
 	defer tearDown()
 
-	err := mRun.RunMigrationsFromDirectory("../resources/test/migrations/valid")
+	err := mRun.RunMigrationsFromDirectory(VALID_PATH)
 	assert.Nil(err)
 	mLogs, _ := mRun.GetMigrationLogs()
 	assert.Equal(1, len(mLogs))
@@ -91,7 +93,7 @@ func TestGetMigrationLogError(t *testing.T) {
 func TestInsertLogDbError(t *testing.T) {
 	setup()
 	defer tearDown()
-	mockDao := mocks.NewMockMigrationDao(t)
+	mockDao := mocks.NewMockMigrationDao(mDao, t)
 	mRun = newMigrator(mockDao)
 	mockDao.EXPECT().InsertMigrationLog(mock.Anything).Return(-1, errors.New(""))
 	err := mRun.(*migrator).executeQuery(q1, hashQuery(q1.Query))
@@ -150,22 +152,16 @@ func TestExecQueryError(t *testing.T) {
 	setup()
 	defer tearDown()
 
-	mockDao := mocks.NewMockMigrationDao(t)
+	mockDao := mocks.NewMockMigrationDao(mDao, t)
 	mRun = newMigrator(mockDao)
 
-	mockDao.EXPECT().SetupMigrationTable().RunAndReturn(func() error {
-		mDao.SetupMigrationTable()
-		return nil
-	})
-	mockDao.EXPECT().GetMigrationLogs().RunAndReturn(func() ([]types.MigrationLog, error) {
-		return mDao.GetMigrationLogs()
-	})
-	mockDao.EXPECT().InsertMigrationLog(TYPE_MIGRATION_LOG).RunAndReturn(func(mLog types.MigrationLog) (int, error) {
-		return mDao.InsertMigrationLog(mLog)
-	})
-	mockDao.EXPECT().UpdateMigrationStatus(TYPE_MIGRATION_LOG).RunAndReturn(func(mLog types.MigrationLog) error {
-		return mDao.UpdateMigrationStatus(mLog)
-	})
+	mockDao.PassThrough(
+		"SetupMigrationTable",
+		"GetMigrationLogs",
+		"InsertMigrationLog",
+		"UpdateMigrationStatus",
+		"GetMigrationLogs",
+	)
 	mockDao.EXPECT().ExecuteQuery(TYPE_MIGRATION).Return(errors.New(""))
 
 	mRun.Migrate([]types.Migration{q1})
@@ -178,23 +174,16 @@ func TestExecQuerySuccessStatusUpdateError(t *testing.T) {
 	setup()
 	defer tearDown()
 
-	mockDao := mocks.NewMockMigrationDao(t)
+	mockDao := mocks.NewMockMigrationDao(mDao, t)
 	mRun = newMigrator(mockDao)
 
-	mockDao.EXPECT().SetupMigrationTable().RunAndReturn(func() error {
-		mDao.SetupMigrationTable()
-		return nil
-	})
-	mockDao.EXPECT().GetMigrationLogs().RunAndReturn(func() ([]types.MigrationLog, error) {
-		return mDao.GetMigrationLogs()
-	})
-	mockDao.EXPECT().InsertMigrationLog(TYPE_MIGRATION_LOG).RunAndReturn(func(mLog types.MigrationLog) (int, error) {
-		return mDao.InsertMigrationLog(mLog)
-	})
+	mockDao.PassThrough(
+		"SetupMigrationTable",
+		"GetMigrationLogs",
+		"InsertMigrationLog",
+		"ExecuteQuery",
+	)
 	mockDao.EXPECT().UpdateMigrationStatus(TYPE_MIGRATION_LOG).Return(errors.New("1"))
-	mockDao.EXPECT().ExecuteQuery(TYPE_MIGRATION).RunAndReturn(func(m types.Migration) error {
-		return mDao.ExecuteQuery(m)
-	})
 
 	err := mRun.Migrate([]types.Migration{q1})
 	assert.ErrorContains(err, "error while marking migration as success")
@@ -205,19 +194,14 @@ func TestExecQueryFailureStatusUpdateError(t *testing.T) {
 	setup()
 	defer tearDown()
 
-	mockDao := mocks.NewMockMigrationDao(t)
+	mockDao := mocks.NewMockMigrationDao(mDao, t)
 	mRun = newMigrator(mockDao)
 
-	mockDao.EXPECT().SetupMigrationTable().RunAndReturn(func() error {
-		mDao.SetupMigrationTable()
-		return nil
-	})
-	mockDao.EXPECT().GetMigrationLogs().RunAndReturn(func() ([]types.MigrationLog, error) {
-		return mDao.GetMigrationLogs()
-	})
-	mockDao.EXPECT().InsertMigrationLog(TYPE_MIGRATION_LOG).RunAndReturn(func(mLog types.MigrationLog) (int, error) {
-		return mDao.InsertMigrationLog(mLog)
-	})
+	mockDao.PassThrough(
+		"SetupMigrationTable",
+		"GetMigrationLogs",
+		"InsertMigrationLog",
+	)
 	mockDao.EXPECT().UpdateMigrationStatus(TYPE_MIGRATION_LOG).Return(errors.New(""))
 	mockDao.EXPECT().ExecuteQuery(TYPE_MIGRATION).Return(errors.New(""))
 
@@ -230,7 +214,7 @@ func TestRollbackFetchError(t *testing.T) {
 	setup()
 	defer tearDown()
 	mRun.Migrate([]types.Migration{q1})
-	mockDao := mocks.NewMockMigrationDao(t)
+	mockDao := mocks.NewMockMigrationDao(mDao, t)
 	mRun = newMigrator(mockDao)
 
 	mockDao.EXPECT().GetMigrationLogs().Return(nil, errors.New("fetch error"))
@@ -244,12 +228,12 @@ func TestRollbackExecError(t *testing.T) {
 	setup()
 	defer tearDown()
 	mRun.Migrate([]types.Migration{q1})
-	mockDao := mocks.NewMockMigrationDao(t)
+	mockDao := mocks.NewMockMigrationDao(mDao, t)
 	mRun = newMigrator(mockDao)
 
-	mockDao.EXPECT().GetMigrationLogs().RunAndReturn(func() ([]types.MigrationLog, error) {
-		return mDao.GetMigrationLogs()
-	})
+	mockDao.PassThrough(
+		"GetMigrationLogs",
+	)
 	mockDao.EXPECT().ExecuteRollback(TYPE_MIGRATION).Return(errors.New("roll back error"))
 
 	err := mRun.Rollback("0")
@@ -261,19 +245,112 @@ func TestRollbackDeleteLogError(t *testing.T) {
 	setup()
 	defer tearDown()
 	mRun.Migrate([]types.Migration{q1})
-	mockDao := mocks.NewMockMigrationDao(t)
+	mockDao := mocks.NewMockMigrationDao(mDao, t)
 	mRun = newMigrator(mockDao)
 
-	mockDao.EXPECT().GetMigrationLogs().RunAndReturn(func() ([]types.MigrationLog, error) {
-		return mDao.GetMigrationLogs()
-	})
-	mockDao.EXPECT().ExecuteRollback(TYPE_MIGRATION).RunAndReturn(func(m types.Migration) error {
-		return mDao.ExecuteRollback(m)
-	})
+	mockDao.PassThrough(
+		"GetMigrationLogs",
+		"ExecuteRollback",
+	)
 	mockDao.EXPECT().DeleteMigrationLog(TYPE_MIGRATION_LOG).Return(errors.New("delete error"))
 
 	err := mRun.Rollback("0")
 	assert.ErrorContains(err, "error while deleting migration log")
+}
+
+func TestValidMigrationArgs(t *testing.T) {
+	assert := assert.New(t)
+	setup()
+	defer tearDown()
+
+	path := VALID_PATH
+	err := mRun.ParseCmdArgs([]string{"run", path})
+	assert.Nil(err)
+	mLogs, _ := mRun.GetMigrationLogs()
+	assert.Equal(1, len(mLogs))
+	assert.Equal(types.MIGRATION_STATUS_SUCCESS, mLogs[0].Status)
+}
+
+func TestInValidMigrationArgs(t *testing.T) {
+	assert := assert.New(t)
+	setup()
+	defer tearDown()
+
+	err := mRun.ParseCmdArgs([]string{"run"})
+	assert.ErrorContains(err, "migration run command needs to have path as second arg")
+
+	path := "../invalid-path"
+	err = mRun.ParseCmdArgs([]string{"run", path})
+	assert.ErrorContains(err, "error while running migrations from path")
+}
+
+func TestParseMigrationArgsFetchError(t *testing.T) {
+	assert := assert.New(t)
+	setup()
+	defer tearDown()
+
+	mockDao := mocks.NewMockMigrationDao(mDao, t)
+	mRun = newMigrator(mockDao)
+
+	mockDao.PassThrough(
+		"SetupMigrationTable",
+		"GetMigrationLogs",
+		"InsertMigrationLog",
+		"ExecuteQuery",
+		"UpdateMigrationStatus",
+	)
+
+	mockDao.EXPECT().GetMigrationLogs().Return(nil, errors.New("")).Once()
+
+	path := VALID_PATH
+	err := mRun.ParseCmdArgs([]string{"run", path})
+	assert.ErrorContains(err, "migration completed, but error in fetching migration log")
+}
+
+func TestValidRollbackArgs(t *testing.T) {
+	assert := assert.New(t)
+	setup()
+	defer tearDown()
+
+	path := VALID_PATH
+	err := mRun.ParseCmdArgs([]string{"run", path})
+	assert.Nil(err)
+	mLogs, _ := mRun.GetMigrationLogs()
+	assert.Equal(1, len(mLogs))
+	assert.Equal(types.MIGRATION_STATUS_SUCCESS, mLogs[0].Status)
+
+	err = mRun.ParseCmdArgs([]string{"rollback", "1"})
+	assert.Nil(err)
+	mLogs, _ = mRun.GetMigrationLogs()
+	assert.Equal(0, len(mLogs))
+}
+
+func TestInValidRollbackArgs(t *testing.T) {
+	assert := assert.New(t)
+	setup()
+	defer tearDown()
+	mDao.SetupMigrationTable()
+
+	err := mRun.ParseCmdArgs([]string{"rollback"})
+	assert.ErrorContains(err, "rollback command needs to have version as second arg")
+}
+
+func TestParseRollbackArgsFetchError(t *testing.T) {
+	assert := assert.New(t)
+	setup()
+	defer tearDown()
+	mDao.SetupMigrationTable()
+	mockDao := mocks.NewMockMigrationDao(mDao, t)
+	mRun = newMigrator(mockDao)
+
+	mockDao.PassThrough(
+		"GetMigrationLogs",
+	)
+
+	mockDao.EXPECT().GetMigrationLogs().Return(nil, errors.New("")).Once()
+
+	err := mRun.ParseCmdArgs([]string{"rollback", "1"})
+	assert.ErrorContains(err, "rollback completed, but error in fetching migration log")
 }
 
 func getDbConnection() *sqlx.DB {

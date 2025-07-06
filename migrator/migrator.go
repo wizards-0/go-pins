@@ -1,8 +1,10 @@
 package migrator
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -15,6 +17,7 @@ import (
 )
 
 type Migrator interface {
+	ParseCmdArgs(args []string) error
 	GetMigrationLogs() ([]types.MigrationLog, error)
 	RunMigrationsFromDirectory(path string) error
 	Migrate(mArr []types.Migration) error
@@ -35,6 +38,54 @@ func newMigrator(dao dao.MigrationDao) Migrator {
 
 type migrator struct {
 	dao dao.MigrationDao
+}
+
+func (m *migrator) ParseCmdArgs(args []string) error {
+	cmd := args[0]
+	switch cmd {
+	case "run":
+		return m.parseMigrationArgs(args)
+	case "rollback":
+		return m.parseRollbackArgs(args)
+	default:
+		return errors.New("invalid migration command. Valid options are 'run <path>' | 'rollback <version>'")
+	}
+}
+
+func (m *migrator) parseRollbackArgs(args []string) error {
+	if len(args) != 2 {
+		return errors.New("rollback command needs to have version as second arg. Example 'rollback 1.1'")
+	}
+	version := args[1]
+	if err := m.Rollback(version); err != nil {
+		return err
+	}
+	mLogs, fetchErr := m.GetMigrationLogs()
+	if fetchErr != nil {
+		return logger.WrapAndLogError(fetchErr, "rollback completed, but error in fetching migration log")
+	}
+	logger.Info("Migration rollback completed. Following are the remaining migrations")
+	logger.Info(getMigrationInfo(mLogs))
+	return nil
+}
+
+func (m *migrator) parseMigrationArgs(args []string) error {
+	if len(args) != 2 {
+		return errors.New("migration run command needs to have path as second arg. Example 'run 1.1'")
+	}
+	path := args[1]
+	if err := m.RunMigrationsFromDirectory(path); err != nil {
+		return err
+	}
+
+	mLogs, fetchErr := m.GetMigrationLogs()
+	if fetchErr != nil {
+		return logger.WrapAndLogError(fetchErr, "migration completed, but error in fetching migration log")
+	}
+
+	logger.Info("Migration completed. Following are the migrations executed / verified")
+	logger.Info(getMigrationInfo(mLogs))
+	return nil
 }
 
 func (m *migrator) GetMigrationLogs() ([]types.MigrationLog, error) {
@@ -163,4 +214,13 @@ func (m *migrator) insertMigrationLog(q types.Migration, hash string) (types.Mig
 	}
 	mLog.Id = id
 	return mLog, nil
+}
+
+func getMigrationInfo(mLogs []types.MigrationLog) string {
+	buf := bytes.Buffer{}
+	buf.WriteString("\n")
+	for _, m := range mLogs {
+		buf.WriteString("Name: " + m.Name + " | Version: " + m.Version)
+	}
+	return buf.String()
 }
