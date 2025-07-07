@@ -16,6 +16,7 @@ func TestReadFiles(t *testing.T) {
 	assert.Nil(err)
 	assert.Equal("4002", props["PORT"])
 	assert.Equal("local", props["ENV_NAME"])
+	assert.Equal("P22=\\", props["PWD"])
 }
 
 func TestReadFilesErrors(t *testing.T) {
