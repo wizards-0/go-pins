@@ -24,11 +24,16 @@ func ReadFiles(filePaths ...string) (map[string]string, error) {
 		}
 
 		for _, prop := range propLines {
-			propParts := strings.SplitN(prop, "=", 2)
-			if len(propParts) != 2 {
-				return nil, fmt.Errorf("invalid property %s, in file %s", prop, filePath)
+			prop = strings.TrimSpace(prop)
+			if !strings.HasPrefix(prop, "#") {
+				propParts := strings.SplitN(prop, "=", 2)
+				if len(propParts) != 2 {
+					return nil, fmt.Errorf("invalid property %s, in file %s", prop, filePath)
+				}
+				key := strings.TrimSpace(propParts[0])
+				value := strings.Trim(strings.TrimSpace(propParts[1]), "\"")
+				props[key] = value
 			}
-			props[propParts[0]] = strings.Trim(propParts[1], "\"")
 		}
 	}
 	return props, nil
