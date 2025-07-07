@@ -13,16 +13,6 @@ import (
 var TYPE_MIGRATION_LOG = mock.AnythingOfType("types.MigrationLog")
 var TYPE_MIGRATION = mock.AnythingOfType("types.Migration")
 
-/*
-	GetMigrationLogs() ([]types.MigrationLog, error)
-	InsertMigrationLog(mLog types.MigrationLog) (int, error)
-	UpdateMigrationStatus(mLog types.MigrationLog) error
-	DeleteMigrationLog(mLog types.MigrationLog) error
-	ExecuteQuery(m types.Migration) error
-	ExecuteRollback(m types.Migration) error
-	SetupMigrationTable() error
-*/
-
 var passThroughMap = map[string]func(mockDao *MockMigrationDao){
 	"SetupMigrationTable": func(mockDao *MockMigrationDao) {
 		mockDao.EXPECT().SetupMigrationTable().RunAndReturn(func() error {

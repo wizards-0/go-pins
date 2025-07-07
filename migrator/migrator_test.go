@@ -335,6 +335,22 @@ func TestInValidRollbackArgs(t *testing.T) {
 	assert.ErrorContains(err, "rollback command needs to have version as second arg")
 }
 
+func TestRollbackError(t *testing.T) {
+	assert := assert.New(t)
+	setup()
+	defer tearDown()
+
+	err := mRun.ParseCmdArgs([]string{"rollback", "1"})
+	assert.ErrorContains(err, "error in executing rollback")
+}
+
+func TestInValidCmdArgs(t *testing.T) {
+	assert := assert.New(t)
+
+	err := mRun.ParseCmdArgs([]string{"bad-cmd"})
+	assert.ErrorContains(err, "invalid migration command")
+}
+
 func TestParseRollbackArgsFetchError(t *testing.T) {
 	assert := assert.New(t)
 	setup()

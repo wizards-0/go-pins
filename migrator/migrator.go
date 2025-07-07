@@ -110,7 +110,7 @@ func (m *migrator) Migrate(mArr []types.Migration) error {
 func (m *migrator) Rollback(ver string) error {
 	mLogs, fetchErr := m.GetMigrationLogs()
 	if fetchErr != nil {
-		return fetchErr
+		return logger.WrapAndLogError(fetchErr, "error in executing rollback")
 	}
 	sort.Slice(mLogs, func(i1, i2 int) bool {
 		return !semver.CompareSemver(mLogs[i1].Version, mLogs[i2].Version, types.VERSION_SEPARATOR)
