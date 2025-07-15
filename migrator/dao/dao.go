@@ -109,7 +109,7 @@ func (dao *migrationDao) SetupMigrationTable() error {
 		query TEXT,
 		rollback TEXT,
 		status VARCHAR(20),
-		date INTEGER,
+		date BIGINT,
 		hash VARCHAR(64)
 	);`)
 	if err != nil {
