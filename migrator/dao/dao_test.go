@@ -16,7 +16,7 @@ var dao MigrationDao
 
 func setup() {
 	db = getDbConnection()
-	dao = NewMigrationDao(db)
+	dao = NewMigrationDao(db, "")
 	dao.SetupMigrationTable()
 	logger.SetWriter(&log, &log, &log, &log)
 }
@@ -25,7 +25,7 @@ func TestCrud(t *testing.T) {
 	assert := assert.New(t)
 	db = getDbConnection()
 	defer db.Close()
-	mDao := NewMigrationDao(db)
+	mDao := NewMigrationDao(db, "")
 	mDao.SetupMigrationTable()
 
 	var l1 = types.MigrationLog{Migration: types.Migration{Name: "Create test table", Version: "1"}}
@@ -120,6 +120,16 @@ func TestRollback(t *testing.T) {
 	db.Close()
 	err = dao.ExecuteRollback(types.Migration{})
 	assert.ErrorContains(err, "error while executing rollback")
+}
+
+func TestSchema(t *testing.T) {
+	assert := assert.New(t)
+	dao := NewMigrationDao(nil, "").(*migrationDao)
+	assert.Equal("migration_log", dao.migrationTable)
+
+	dao = NewMigrationDao(nil, "my_schema").(*migrationDao)
+	assert.Equal("my_schema.migration_log", dao.migrationTable)
+
 }
 
 func getDbConnection() *sqlx.DB {

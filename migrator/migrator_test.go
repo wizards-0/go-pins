@@ -31,8 +31,8 @@ func setup() {
 	logger.SetWriter(w, w, w, w)
 	logger.SetLogLevel(logger.LOG_LEVEL_DEBUG)
 	db = getDbConnection()
-	mDao = dao.NewMigrationDao(db)
-	mRun = New(db)
+	mDao = dao.NewMigrationDao(db, "")
+	mRun = New(db, "")
 }
 
 func tearDown() {

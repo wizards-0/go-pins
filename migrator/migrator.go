@@ -24,9 +24,9 @@ type Migrator interface {
 	Rollback(ver string) error
 }
 
-func New(db *sqlx.DB) Migrator {
+func New(db *sqlx.DB, schema string) Migrator {
 	return &migrator{
-		dao: dao.NewMigrationDao(db),
+		dao: dao.NewMigrationDao(db, schema),
 	}
 }
 
