@@ -42,7 +42,7 @@ func NewMigrationDao(db *sqlx.DB, schema string) MigrationDao {
 
 func (dao *migrationDao) GetMigrationLogs() ([]types.MigrationLog, error) {
 	mLogs := []types.MigrationLog{}
-	if err := dao.db.Select(&mLogs, "SELECT * FROM "+dao.migrationTable); err != nil {
+	if err := dao.db.Select(&mLogs, "SELECT id, name, version, query, rollback, status, date, hash FROM "+dao.migrationTable); err != nil {
 		return nil, logger.WrapAndLogError(err, "error while getting migration logs from db")
 	}
 
@@ -53,7 +53,7 @@ func (dao *migrationDao) GetMigrationLogs() ([]types.MigrationLog, error) {
 }
 
 func (dao *migrationDao) InsertMigrationLog(mLog types.MigrationLog) (int, error) {
-	_, err := dao.db.NamedExec("INSERT INTO "+dao.migrationTable+" (NAME, VERSION, QUERY, ROLLBACK, STATUS, DATE, HASH) VALUES (:NAME, :VERSION, :QUERY, :ROLLBACK, :STATUS, :DATE, :HASH)", &mLog)
+	_, err := dao.db.NamedExec("INSERT INTO "+dao.migrationTable+" (name, version, query, rollback, status, date, hash) VALUES (:name, :version, :query, :rollback, :status, :date, :hash)", &mLog)
 
 	if err != nil {
 		return -1, logger.LogError(fmt.Errorf("error in database while inserting migration log\n%w", err))
@@ -64,7 +64,7 @@ func (dao *migrationDao) InsertMigrationLog(mLog types.MigrationLog) (int, error
 
 func (dao *migrationDao) getMigrationLogId(mLog types.MigrationLog) (int, error) {
 	id := -1
-	err := dao.db.Get(&id, "SELECT ID FROM "+dao.migrationTable+" WHERE VERSION=$1", mLog.Version)
+	err := dao.db.Get(&id, "SELECT id FROM "+dao.migrationTable+" WHERE version=$1", mLog.Version)
 	if err != nil {
 		return -1, logger.LogError(fmt.Errorf("error in database while getting migration log id\n%w", err))
 	}
@@ -72,7 +72,7 @@ func (dao *migrationDao) getMigrationLogId(mLog types.MigrationLog) (int, error)
 }
 
 func (dao *migrationDao) UpdateMigrationStatus(mLog types.MigrationLog) error {
-	_, err := dao.db.NamedExec("UPDATE "+dao.migrationTable+" SET STATUS=:STATUS WHERE ID=:ID", &mLog)
+	_, err := dao.db.NamedExec("UPDATE "+dao.migrationTable+" SET status=:status WHERE id=:id", &mLog)
 	if err != nil {
 		return logger.LogError(fmt.Errorf("error while updating migration log status\n%w", err))
 	}
@@ -80,7 +80,7 @@ func (dao *migrationDao) UpdateMigrationStatus(mLog types.MigrationLog) error {
 }
 
 func (dao *migrationDao) DeleteMigrationLog(mLog types.MigrationLog) error {
-	_, err := dao.db.NamedExec("DELETE FROM "+dao.migrationTable+" WHERE VERSION=:VERSION", mLog)
+	_, err := dao.db.NamedExec("DELETE FROM "+dao.migrationTable+" WHERE version=:version", mLog)
 	if err != nil {
 		return logger.LogError(fmt.Errorf("error while deleting migration log\n%w", err))
 	}
@@ -103,14 +103,14 @@ func (dao *migrationDao) ExecuteRollback(m types.Migration) error {
 
 func (dao *migrationDao) SetupMigrationTable() error {
 	_, err := dao.db.Exec(`CREATE TABLE IF NOT EXISTS ` + dao.migrationTable + ` (
-		ID INTEGER PRIMARY KEY,
-		NAME VARCHAR(200),
-		VERSION VARCHAR(20) UNIQUE,
-		QUERY TEXT,
-		ROLLBACK TEXT,
-		STATUS VARCHAR(20),
-		DATE INTEGER,
-		HASH VARCHAR(64)
+		id INTEGER PRIMARY KEY,
+		name VARCHAR(200),
+		version VARCHAR(20) UNIQUE,
+		query TEXT,
+		rollback TEXT,
+		status VARCHAR(20),
+		date INTEGER,
+		hash VARCHAR(64)
 	);`)
 	if err != nil {
 		return logger.LogError(fmt.Errorf("error in creating migration_log table\n%w", err))

@@ -11,16 +11,16 @@ const (
 )
 
 type MigrationLog struct {
-	Id int `db:"ID" json:"id"`
+	Id int `db:"id" json:"id"`
 	Migration
-	Status string `db:"STATUS" json:"status"`
-	Date   int64  `db:"DATE" json:"date"`
-	Hash   string `db:"HASH" json:"hash"`
+	Status string `db:"status" json:"status"`
+	Date   int64  `db:"date" json:"date"`
+	Hash   string `db:"hash" json:"hash"`
 }
 
 type Migration struct {
-	Name     string `db:"NAME" json:"name"`
-	Version  string `db:"VERSION" json:"version"`
-	Query    string `db:"QUERY" json:"query"`
-	Rollback string `db:"ROLLBACK" json:"rollback"`
+	Name     string `db:"name" json:"name"`
+	Version  string `db:"version" json:"version"`
+	Query    string `db:"query" json:"query"`
+	Rollback string `db:"rollback" json:"rollback"`
 }
