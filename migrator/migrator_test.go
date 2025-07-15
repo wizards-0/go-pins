@@ -264,7 +264,7 @@ func TestValidMigrationArgs(t *testing.T) {
 	defer tearDown()
 
 	path := VALID_PATH
-	err := mRun.ParseCmdArgs([]string{"run", path})
+	err := mRun.ParseCmdArgs([]string{"main", "run", path})
 	assert.Nil(err)
 	mLogs, _ := mRun.GetMigrationLogs()
 	assert.Equal(1, len(mLogs))
@@ -276,11 +276,11 @@ func TestInValidMigrationArgs(t *testing.T) {
 	setup()
 	defer tearDown()
 
-	err := mRun.ParseCmdArgs([]string{"run"})
+	err := mRun.ParseCmdArgs([]string{"main", "run"})
 	assert.ErrorContains(err, "migration run command needs to have path as second arg")
 
 	path := "../invalid-path"
-	err = mRun.ParseCmdArgs([]string{"run", path})
+	err = mRun.ParseCmdArgs([]string{"main", "run", path})
 	assert.ErrorContains(err, "error while running migrations from path")
 }
 
@@ -303,7 +303,7 @@ func TestParseMigrationArgsFetchError(t *testing.T) {
 	mockDao.EXPECT().GetMigrationLogs().Return(nil, errors.New("")).Once()
 
 	path := VALID_PATH
-	err := mRun.ParseCmdArgs([]string{"run", path})
+	err := mRun.ParseCmdArgs([]string{"main", "run", path})
 	assert.ErrorContains(err, "migration completed, but error in fetching migration log")
 }
 
@@ -313,13 +313,13 @@ func TestValidRollbackArgs(t *testing.T) {
 	defer tearDown()
 
 	path := VALID_PATH
-	err := mRun.ParseCmdArgs([]string{"run", path})
+	err := mRun.ParseCmdArgs([]string{"main", "run", path})
 	assert.Nil(err)
 	mLogs, _ := mRun.GetMigrationLogs()
 	assert.Equal(1, len(mLogs))
 	assert.Equal(types.MIGRATION_STATUS_SUCCESS, mLogs[0].Status)
 
-	err = mRun.ParseCmdArgs([]string{"rollback", "1"})
+	err = mRun.ParseCmdArgs([]string{"main", "rollback", "1"})
 	assert.Nil(err)
 	mLogs, _ = mRun.GetMigrationLogs()
 	assert.Equal(0, len(mLogs))
@@ -331,7 +331,7 @@ func TestInValidRollbackArgs(t *testing.T) {
 	defer tearDown()
 	mDao.SetupMigrationTable()
 
-	err := mRun.ParseCmdArgs([]string{"rollback"})
+	err := mRun.ParseCmdArgs([]string{"main", "rollback"})
 	assert.ErrorContains(err, "rollback command needs to have version as second arg")
 }
 
@@ -340,14 +340,14 @@ func TestRollbackError(t *testing.T) {
 	setup()
 	defer tearDown()
 
-	err := mRun.ParseCmdArgs([]string{"rollback", "1"})
+	err := mRun.ParseCmdArgs([]string{"main", "rollback", "1"})
 	assert.ErrorContains(err, "error in executing rollback")
 }
 
 func TestInValidCmdArgs(t *testing.T) {
 	assert := assert.New(t)
 
-	err := mRun.ParseCmdArgs([]string{"bad-cmd"})
+	err := mRun.ParseCmdArgs([]string{"main", "bad-cmd"})
 	assert.ErrorContains(err, "invalid migration command")
 }
 
@@ -365,7 +365,7 @@ func TestParseRollbackArgsFetchError(t *testing.T) {
 
 	mockDao.EXPECT().GetMigrationLogs().Return(nil, errors.New("")).Once()
 
-	err := mRun.ParseCmdArgs([]string{"rollback", "1"})
+	err := mRun.ParseCmdArgs([]string{"main", "rollback", "1"})
 	assert.ErrorContains(err, "rollback completed, but error in fetching migration log")
 }
 
