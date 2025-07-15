@@ -13,7 +13,7 @@ import (
 
 type MigrationDao interface {
 	GetMigrationLogs() ([]types.MigrationLog, error)
-	InsertMigrationLog(mLog types.MigrationLog) (int, error)
+	InsertMigrationLog(mLog types.MigrationLog) error
 	UpdateMigrationStatus(mLog types.MigrationLog) error
 	DeleteMigrationLog(mLog types.MigrationLog) error
 	ExecuteQuery(m types.Migration) error
@@ -52,23 +52,13 @@ func (dao *migrationDao) GetMigrationLogs() ([]types.MigrationLog, error) {
 	return mLogs, nil
 }
 
-func (dao *migrationDao) InsertMigrationLog(mLog types.MigrationLog) (int, error) {
-	_, err := dao.db.NamedExec("INSERT INTO "+dao.migrationTable+" (name, version, query, rollback, status, date, hash) VALUES (:name, :version, :query, :rollback, :status, :date, :hash)", &mLog)
+func (dao *migrationDao) InsertMigrationLog(mLog types.MigrationLog) error {
+	_, err := dao.db.NamedExec("INSERT INTO "+dao.migrationTable+" (id, name, version, query, rollback, status, date, hash) VALUES (:id, :name, :version, :query, :rollback, :status, :date, :hash)", &mLog)
 
 	if err != nil {
-		return -1, logger.LogError(fmt.Errorf("error in database while inserting migration log\n%w", err))
+		return logger.LogError(fmt.Errorf("error in database while inserting migration log\n%w", err))
 	}
-
-	return dao.getMigrationLogId(mLog)
-}
-
-func (dao *migrationDao) getMigrationLogId(mLog types.MigrationLog) (int, error) {
-	id := -1
-	err := dao.db.Get(&id, "SELECT id FROM "+dao.migrationTable+" WHERE version=$1", mLog.Version)
-	if err != nil {
-		return -1, logger.LogError(fmt.Errorf("error in database while getting migration log id\n%w", err))
-	}
-	return id, nil
+	return nil
 }
 
 func (dao *migrationDao) UpdateMigrationStatus(mLog types.MigrationLog) error {

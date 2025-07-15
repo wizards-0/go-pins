@@ -217,11 +217,10 @@ func (m *migrator) insertMigrationLog(q types.Migration, id int, hash string) (t
 	mLog.Status = types.MIGRATION_STATUS_STARTED
 	mLog.Date = time.Now().UnixMilli()
 	mLog.Hash = hash
-	id, err := m.dao.InsertMigrationLog(mLog)
+	err := m.dao.InsertMigrationLog(mLog)
 	if err != nil {
 		return types.MigrationLog{}, fmt.Errorf("error while inserting migration log\n%w", err)
 	}
-	mLog.Id = id
 	return mLog, nil
 }
 

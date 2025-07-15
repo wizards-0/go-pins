@@ -28,13 +28,13 @@ func TestCrud(t *testing.T) {
 	mDao := NewMigrationDao(db, "")
 	mDao.SetupMigrationTable()
 
-	var l1 = types.MigrationLog{Migration: types.Migration{Name: "Create test table", Version: "1"}}
-	var l1o1 = types.MigrationLog{Migration: types.Migration{Name: "Add Column", Version: "1-1"}}
-	var l2 = types.MigrationLog{Migration: types.Migration{Name: "Create test table2", Version: "2"}}
+	var l1 = types.MigrationLog{Id: 1, Migration: types.Migration{Name: "Create test table", Version: "1"}}
+	var l1o1 = types.MigrationLog{Id: 2, Migration: types.Migration{Name: "Add Column", Version: "1-1"}}
+	var l2 = types.MigrationLog{Id: 3, Migration: types.Migration{Name: "Create test table2", Version: "2"}}
 
-	l1o1.Id, _ = mDao.InsertMigrationLog(l1o1)
-	l2.Id, _ = mDao.InsertMigrationLog(l2)
-	l1.Id, _ = mDao.InsertMigrationLog(l1)
+	_ = mDao.InsertMigrationLog(l1o1)
+	_ = mDao.InsertMigrationLog(l2)
+	_ = mDao.InsertMigrationLog(l1)
 	mLogs, _ := mDao.GetMigrationLogs()
 	assert.Equal(3, len(mLogs))
 	assert.Equal("1", mLogs[0].Version)
@@ -72,16 +72,8 @@ func TestInsertMigrationLogsError(t *testing.T) {
 	assert := assert.New(t)
 	setup()
 	db.Close()
-	_, err := dao.InsertMigrationLog(types.MigrationLog{})
+	err := dao.InsertMigrationLog(types.MigrationLog{})
 	assert.ErrorContains(err, "error in database while inserting migration log")
-}
-
-func TestGetMigrationLogIdError(t *testing.T) {
-	assert := assert.New(t)
-	setup()
-	db.Close()
-	_, err := dao.(*migrationDao).getMigrationLogId(types.MigrationLog{})
-	assert.ErrorContains(err, "error in database while getting migration log id")
 }
 
 func TestUpdateMigrationStatusError(t *testing.T) {

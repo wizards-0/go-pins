@@ -25,7 +25,7 @@ var passThroughMap = map[string]func(mockDao *MockMigrationDao){
 		}).Once()
 	},
 	"InsertMigrationLog": func(mockDao *MockMigrationDao) {
-		mockDao.EXPECT().InsertMigrationLog(TYPE_MIGRATION_LOG).RunAndReturn(func(mLog types.MigrationLog) (int, error) {
+		mockDao.EXPECT().InsertMigrationLog(TYPE_MIGRATION_LOG).RunAndReturn(func(mLog types.MigrationLog) error {
 			return mockDao.realDao.InsertMigrationLog(mLog)
 		}).Once()
 	},
@@ -299,29 +299,20 @@ func (_c *MockMigrationDao_GetMigrationLogs_Call) RunAndReturn(run func() ([]typ
 }
 
 // InsertMigrationLog provides a mock function for the type MockMigrationDao
-func (_mock *MockMigrationDao) InsertMigrationLog(mLog types.MigrationLog) (int, error) {
+func (_mock *MockMigrationDao) InsertMigrationLog(mLog types.MigrationLog) error {
 	ret := _mock.Called(mLog)
 
 	if len(ret) == 0 {
 		panic("no return value specified for InsertMigrationLog")
 	}
 
-	var r0 int
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(types.MigrationLog) (int, error)); ok {
-		return returnFunc(mLog)
-	}
-	if returnFunc, ok := ret.Get(0).(func(types.MigrationLog) int); ok {
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(types.MigrationLog) error); ok {
 		r0 = returnFunc(mLog)
 	} else {
-		r0 = ret.Get(0).(int)
+		r0 = ret.Error(0)
 	}
-	if returnFunc, ok := ret.Get(1).(func(types.MigrationLog) error); ok {
-		r1 = returnFunc(mLog)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
+	return r0
 }
 
 // MockMigrationDao_InsertMigrationLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InsertMigrationLog'
@@ -348,12 +339,12 @@ func (_c *MockMigrationDao_InsertMigrationLog_Call) Run(run func(mLog types.Migr
 	return _c
 }
 
-func (_c *MockMigrationDao_InsertMigrationLog_Call) Return(n int, err error) *MockMigrationDao_InsertMigrationLog_Call {
-	_c.Call.Return(n, err)
+func (_c *MockMigrationDao_InsertMigrationLog_Call) Return(err error) *MockMigrationDao_InsertMigrationLog_Call {
+	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockMigrationDao_InsertMigrationLog_Call) RunAndReturn(run func(mLog types.MigrationLog) (int, error)) *MockMigrationDao_InsertMigrationLog_Call {
+func (_c *MockMigrationDao_InsertMigrationLog_Call) RunAndReturn(run func(mLog types.MigrationLog) error) *MockMigrationDao_InsertMigrationLog_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -95,7 +95,7 @@ func TestInsertLogDbError(t *testing.T) {
 	defer tearDown()
 	mockDao := mocks.NewMockMigrationDao(mDao, t)
 	mRun = newMigrator(mockDao)
-	mockDao.EXPECT().InsertMigrationLog(mock.Anything).Return(-1, errors.New(""))
+	mockDao.EXPECT().InsertMigrationLog(mock.Anything).Return(errors.New(""))
 	err := mRun.(*migrator).executeQuery(q1, 1, hashQuery(q1.Query))
 	assert.ErrorContains(t, err, "error while inserting")
 }
