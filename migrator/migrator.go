@@ -160,7 +160,7 @@ func (migrator migrator) executeMigrationQueries(mArr []types.Migration) error {
 }
 
 func (migrator migrator) executeQuery(m types.Migration, id int, hash string) error {
-	mLog, insertErr := migrator.insertMigrationLog(m, hash)
+	mLog, insertErr := migrator.insertMigrationLog(m, id, hash)
 	if insertErr != nil {
 		return logger.LogError(fmt.Errorf("error while inserting migration log for migration '%v-%v'\n%w", mLog.Version, mLog.Name, insertErr))
 	}
@@ -210,8 +210,9 @@ func validateHash(m types.MigrationLog, hash string) error {
 	return nil
 }
 
-func (m *migrator) insertMigrationLog(q types.Migration, hash string) (types.MigrationLog, error) {
+func (m *migrator) insertMigrationLog(q types.Migration, id int, hash string) (types.MigrationLog, error) {
 	mLog := types.MigrationLog{}
+	mLog.Id = id
 	mLog.Migration = q
 	mLog.Status = types.MIGRATION_STATUS_STARTED
 	mLog.Date = time.Now().UnixMilli()
