@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/samber/lo"
 	"github.com/wizards-0/go-pins/logger"
 	"github.com/wizards-0/go-pins/migrator/dao"
 	"github.com/wizards-0/go-pins/migrator/types"
@@ -139,20 +140,26 @@ func (migrator migrator) executeMigrationQueries(mArr []types.Migration) error {
 	sort.Slice(mArr, func(i1, i2 int) bool {
 		return semver.CompareSemver(mArr[i1].Version, mArr[i2].Version, types.VERSION_SEPARATOR)
 	})
+	maxId := lo.MaxBy(lo.Values(mMap), func(mLog types.MigrationLog, maxLog types.MigrationLog) bool {
+		return mLog.Id > maxLog.Id
+	}).Id
 	for _, m := range mArr {
 		hash := hashQuery(m.Query)
 		if mLog, exists := mMap[m.Version]; exists {
 			if hashErr := validateHash(mLog, hash); hashErr != nil {
 				return fmt.Errorf("error in execution while validating hash for '%v-%v'\n%w", mLog.Version, mLog.Name, hashErr)
 			}
-		} else if execErr := migrator.executeQuery(m, hash); execErr != nil {
-			return execErr
+		} else {
+			maxId = maxId + 1
+			if execErr := migrator.executeQuery(m, maxId, hash); execErr != nil {
+				return execErr
+			}
 		}
 	}
 	return nil
 }
 
-func (migrator migrator) executeQuery(m types.Migration, hash string) error {
+func (migrator migrator) executeQuery(m types.Migration, id int, hash string) error {
 	mLog, insertErr := migrator.insertMigrationLog(m, hash)
 	if insertErr != nil {
 		return logger.LogError(fmt.Errorf("error while inserting migration log for migration '%v-%v'\n%w", mLog.Version, mLog.Name, insertErr))
