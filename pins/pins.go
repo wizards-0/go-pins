@@ -1,10 +1,20 @@
 package pins
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/wizards-0/go-pins/logger"
+)
 
 func PanicOnError(err error) {
 	if err != nil {
 		panic(err)
+	}
+}
+
+func LogOnError(err error) {
+	if err != nil {
+		logger.Error(err)
 	}
 }
 
