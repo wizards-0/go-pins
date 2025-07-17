@@ -61,6 +61,9 @@ func checkAndLogErrorToConsole(err error) error {
 	return err
 }
 func wrapAndLogErrorToConsole(err error, msg string) error {
+	if err == nil {
+		return nil
+	}
 	wrappedError := fmt.Errorf(msg+"\n%w", err)
 	errLog.Output(2, wrappedError.Error())
 	return wrappedError

@@ -229,4 +229,6 @@ func TestErrorLogging(t *testing.T) {
 	_ = CheckAndLogError(e)
 	logMsg, _ = io.ReadAll(logReader)
 	assert.Equal(getErrorLog(errMsg, "229"), string(logMsg))
+
+	assert.Equal(nil, WrapAndLogError(nil, "test"))
 }
