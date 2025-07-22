@@ -6,9 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var f Factory = New()
+
 func TestGetService(t *testing.T) {
 	assert := assert.New(t)
-	f := GetInstance()
+
 	f.RegisterFactory("service1", NewService1)
 	f.RegisterFactory("service2", NewService2)
 	f.RegisterFactory("service3", NewService3)
@@ -35,7 +37,22 @@ func TestGetService(t *testing.T) {
 	assert.ErrorContains(err, "cycle")
 
 	_, err = f.GetBean("service6")
-	assert.ErrorContains(err, "no factory found")
+	assert.ErrorContains(err, "no bean / factory found")
+
+	_, err = GetBean("service6")
+	assert.ErrorContains(err, "no bean / factory found")
+
+	RegisterBean("service6", []string{})
+	_, err = GetBean("service6")
+	assert.Nil(err)
+
+	f.RegisterBean("service6", []string{})
+	_, err = f.GetBean("service6")
+	assert.Nil(err)
+
+	RegisterFactory("service7", NewService1)
+	_, err = GetBean("service7")
+	assert.Nil(err)
 }
 
 type Service1 interface {
@@ -66,7 +83,7 @@ func (s *service2) do2() {
 }
 
 func NewService2() (any, error) {
-	f := GetInstance()
+
 	s1, _ := f.GetBean("service1")
 	return &service2{
 		s1: s1.(Service1),
@@ -74,19 +91,19 @@ func NewService2() (any, error) {
 }
 
 func NewService3() (any, error) {
-	f := GetInstance()
+
 	_, err := f.GetBean("service5")
 	return nil, err
 }
 
 func NewService4() (any, error) {
-	f := GetInstance()
+
 	_, err := f.GetBean("service3")
 	return nil, err
 }
 
 func NewService5() (any, error) {
-	f := GetInstance()
+
 	_, err := f.GetBean("service4")
 	return nil, err
 }
