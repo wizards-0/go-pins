@@ -15,26 +15,26 @@ func TestGetService(t *testing.T) {
 	f.RegisterFactory("service4", NewService4)
 	f.RegisterFactory("service5", NewService5)
 
-	s1, err := f.GetService("service1")
+	s1, err := f.GetBean("service1")
 	_, castable := s1.(Service1)
 	assert.True(castable)
 	assert.Nil(err)
 
-	s2, err := f.GetService("service2")
+	s2, err := f.GetBean("service2")
 	_, castable = s2.(Service2)
 	assert.True(castable)
 	assert.Nil(err)
 
-	_, err = f.GetService("service3")
+	_, err = f.GetBean("service3")
 	assert.ErrorContains(err, "cycle")
 
-	_, err = f.GetService("service4")
+	_, err = f.GetBean("service4")
 	assert.ErrorContains(err, "cycle")
 
-	_, err = f.GetService("service5")
+	_, err = f.GetBean("service5")
 	assert.ErrorContains(err, "cycle")
 
-	_, err = f.GetService("service6")
+	_, err = f.GetBean("service6")
 	assert.ErrorContains(err, "no factory found")
 }
 
@@ -67,7 +67,7 @@ func (s *service2) do2() {
 
 func NewService2() (any, error) {
 	f := GetInstance()
-	s1, _ := f.GetService("service1")
+	s1, _ := f.GetBean("service1")
 	return &service2{
 		s1: s1.(Service1),
 	}, nil
@@ -75,18 +75,18 @@ func NewService2() (any, error) {
 
 func NewService3() (any, error) {
 	f := GetInstance()
-	_, err := f.GetService("service5")
+	_, err := f.GetBean("service5")
 	return nil, err
 }
 
 func NewService4() (any, error) {
 	f := GetInstance()
-	_, err := f.GetService("service3")
+	_, err := f.GetBean("service3")
 	return nil, err
 }
 
 func NewService5() (any, error) {
 	f := GetInstance()
-	_, err := f.GetService("service4")
+	_, err := f.GetBean("service4")
 	return nil, err
 }
