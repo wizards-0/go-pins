@@ -16,16 +16,11 @@ func ReadFiles(filePaths ...string) (map[string]string, error) {
 			return nil, logger.WrapAndLogError(fileReadErr, "error in reading file "+filePath)
 		}
 		propFile := string(pBytes)
-		var propLines []string
-		if strings.Contains(propFile, "\r\n") {
-			propLines = strings.Split(propFile, "\r\n")
-		} else {
-			propLines = strings.Split(propFile, "\n")
-		}
+		propLines := strings.Split(propFile, "\n")
 
 		for _, prop := range propLines {
 			prop = strings.TrimSpace(prop)
-			if !strings.HasPrefix(prop, "#") {
+			if !strings.HasPrefix(prop, "#") && prop != "" {
 				propParts := strings.SplitN(prop, "=", 2)
 				if len(propParts) != 2 {
 					return nil, fmt.Errorf("invalid property %s, in file %s", prop, filePath)
