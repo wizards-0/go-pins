@@ -63,6 +63,16 @@ func RegisterParamsHandler(
 	})
 }
 
+func RegisterSingleFileServer(
+	mux *http.ServeMux,
+	pattern string,
+	filePath string,
+) {
+	mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filePath)
+	})
+}
+
 func getReqBody[T any](w http.ResponseWriter, r *http.Request, bodyFactory func() *T) (*T, error) {
 	reqBody := bodyFactory()
 	if err := json.NewDecoder(r.Body).Decode(reqBody); err != nil {

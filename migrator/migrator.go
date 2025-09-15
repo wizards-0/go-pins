@@ -18,7 +18,7 @@ import (
 )
 
 type Migrator interface {
-	ParseCmdArgs(args []string) error
+	Cli(osArgs []string) error
 	GetMigrationLogs() ([]types.MigrationLog, error)
 	RunMigrationsFromDirectory(path string) error
 	Migrate(mArr []types.Migration) error
@@ -41,7 +41,7 @@ type migrator struct {
 	dao dao.MigrationDao
 }
 
-func (m *migrator) ParseCmdArgs(osArgs []string) error {
+func (m *migrator) Cli(osArgs []string) error {
 	args := osArgs[1:]
 	cmd := args[0]
 	switch cmd {

@@ -309,6 +309,20 @@ func TestAPIResponse(t *testing.T) {
 
 	// 6.
 }
+
+func TestSingleFileServer(t *testing.T) {
+	setup()
+	assert := assert.New(t)
+	mux := http.NewServeMux()
+	RegisterSingleFileServer(mux, "/", "../resources/test/properties/local.properties")
+	s := httptest.NewServer(mux)
+	defer s.Close()
+
+	r, err := http.Get(s.URL)
+	assert.Nil(err)
+	assert.Equal(http.StatusOK, r.StatusCode)
+}
+
 func getResponseMap(resp *http.Response, err error) map[string]string {
 	respBody := map[string]string{}
 	if err == nil {
