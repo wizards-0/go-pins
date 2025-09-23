@@ -227,8 +227,32 @@ func (m *migrator) insertMigrationLog(q types.Migration, id int, hash string) (t
 func getMigrationInfo(mLogs []types.MigrationLog) string {
 	buf := bytes.Buffer{}
 	buf.WriteString("\n")
+	for range 80 {
+		buf.WriteRune('-')
+	}
+	buf.WriteString("\n")
+	buf.WriteString("|  Version  ")
+	writePadded(&buf, "|  Name", 80-13)
+	buf.WriteString("|\n")
+	for range 80 {
+		buf.WriteRune('-')
+	}
+	buf.WriteString("\n")
 	for _, m := range mLogs {
-		buf.WriteString("Name: " + m.Name + " | Version: " + m.Version)
+		writePadded(&buf, "|  "+m.Version, 12)
+		writePadded(&buf, "|  "+m.Name, 80-13)
+		buf.WriteString("|\n")
+	}
+	for range 80 {
+		buf.WriteRune('-')
 	}
 	return buf.String()
+}
+
+func writePadded(buf *bytes.Buffer, s string, length int) {
+	padLen := length - len(s)
+	buf.WriteString(s)
+	for range padLen {
+		buf.WriteRune(' ')
+	}
 }
