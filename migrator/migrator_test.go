@@ -111,18 +111,30 @@ func TestInvalidHashDbError(t *testing.T) {
 }
 
 func TestRollback(t *testing.T) {
+	assert := assert.New(t)
 	setup()
 	defer tearDown()
 	mRun.Migrate([]types.Migration{q1, q2})
 
 	mRun.Rollback("2")
 	mLogs, _ := mRun.GetMigrationLogs()
-	assert.Equal(t, 1, len(mLogs))
-	assert.Equal(t, "1", mLogs[0].Version)
+	assert.Equal(1, len(mLogs))
+	assert.Equal("1", mLogs[0].Version)
 
 	mRun.Rollback("1")
 	mLogs, _ = mRun.GetMigrationLogs()
-	assert.Equal(t, 0, len(mLogs))
+	assert.Equal(0, len(mLogs))
+
+	mRun.Migrate([]types.Migration{q1, q2, q1_1})
+
+	mRun.Rollback("3")
+	mLogs, _ = mRun.GetMigrationLogs()
+	assert.Equal(3, len(mLogs))
+	assert.Equal("1", mLogs[0].Version)
+
+	mRun.Rollback("0")
+	mLogs, _ = mRun.GetMigrationLogs()
+	assert.Equal(0, len(mLogs))
 }
 
 func TestRollbackWithoutMigration(t *testing.T) {

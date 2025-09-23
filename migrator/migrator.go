@@ -118,15 +118,16 @@ func (m *migrator) Rollback(ver string) error {
 		return !semver.CompareSemver(mLogs[i1].Version, mLogs[i2].Version, types.VERSION_SEPARATOR)
 	})
 	for _, mLog := range mLogs {
+		if !semver.CompareSemver(ver, mLog.Version, types.VERSION_SEPARATOR) {
+			return nil
+		}
+
 		if err := m.dao.ExecuteRollback(mLog.Migration); err != nil {
 			return fmt.Errorf("error while executing rollback query for version '%v'\n%w", ver, err)
 		}
 
 		if err := m.dao.DeleteMigrationLog(mLog); err != nil {
 			return fmt.Errorf("error while deleting migration log\n%w", err)
-		}
-		if semver.CompareSemver(ver, mLog.Version, types.VERSION_SEPARATOR) {
-			return nil
 		}
 	}
 	return nil
