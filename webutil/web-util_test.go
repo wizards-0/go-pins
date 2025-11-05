@@ -323,6 +323,20 @@ func TestSingleFileServer(t *testing.T) {
 	assert.Equal(http.StatusOK, r.StatusCode)
 }
 
+func TestSingleFileServerReadError(t *testing.T) {
+	setup()
+	assert := assert.New(t)
+	defer func() {
+		r := recover()
+		assert.NotNil(r)
+	}()
+
+	mux := http.NewServeMux()
+	RegisterSingleFileServer(mux, "/", ".bad-path")
+	s := httptest.NewServer(mux)
+	defer s.Close()
+}
+
 func getResponseMap(resp *http.Response, err error) map[string]string {
 	respBody := map[string]string{}
 	if err == nil {

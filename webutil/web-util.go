@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/wizards-0/go-pins/logger"
@@ -19,6 +20,8 @@ type ErrorResponse struct {
 	Body         any    `json:"body"`
 	ErrorMessage string `json:"errorMessage"`
 }
+
+var pageCache = map[string][]byte{}
 
 func RegisterRequestBodyHandler[T any](
 	mux *http.ServeMux,
@@ -68,8 +71,15 @@ func RegisterSingleFileServer(
 	pattern string,
 	filePath string,
 ) {
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		logger.WrapAndLogError(err, "error in reading file to be served, path: "+filePath)
+		panic(err)
+	}
+	pageCache[filePath] = file
 	mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filePath)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write(file)
 	})
 }
 

@@ -42,6 +42,7 @@ func NewMigrationDao(db *sqlx.DB, schema string) MigrationDao {
 
 func (dao *migrationDao) GetMigrationLogs() ([]types.MigrationLog, error) {
 	mLogs := []types.MigrationLog{}
+
 	if err := dao.db.Select(&mLogs, "SELECT id, name, version, query, rollback, status, date, hash FROM "+dao.migrationTable); err != nil {
 		return nil, logger.WrapAndLogError(err, "error while getting migration logs from db")
 	}

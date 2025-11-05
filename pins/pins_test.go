@@ -37,3 +37,36 @@ func TestAssertValue(t *testing.T) {
 	AssertValue("1", "1")
 	AssertValue("1", "2")
 }
+
+func TestAppend(t *testing.T) {
+	assert := assert.New(t)
+	buf := &bytes.Buffer{}
+
+	someStr := "someString"
+
+	buf.Reset()
+	sVal := "test value"
+	AppendIfPresent(buf, sVal, someStr)
+	assert.Equal("someString", buf.String())
+
+	buf.Reset()
+	sVal = ""
+	AppendIfPresent(buf, sVal, someStr)
+	assert.Equal("", buf.String())
+
+	buf.Reset()
+	iVal := 5
+	AppendIfPresent(buf, iVal, someStr)
+	assert.Equal("someString", buf.String())
+
+	buf.Reset()
+	iVal = 0
+	AppendIfPresent(buf, iVal, someStr)
+	assert.Equal("", buf.String())
+
+	buf.Reset()
+	bVal := false
+	AppendIfPresent(buf, bVal, someStr)
+	assert.Equal("someString", buf.String())
+
+}
