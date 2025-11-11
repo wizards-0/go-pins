@@ -1,15 +1,15 @@
 all: false
-dir: '{{.ConfigDir}}/mocks/{{.InterfaceDirRelative}}'
-filename: '{{.Mock}}{{.InterfaceName}}.go'
+dir: "{{.ConfigDir}}/mocks/{{.InterfaceDirRelative}}"
+filename: "{{.Mock}}{{.InterfaceName}}.go"
 force-file-write: true
 formatter: goimports
 log-level: info
-structname: '{{.Mock}}{{.InterfaceName}}'
-pkgname: 'mocks'
+structname: "{{.Mock}}{{.InterfaceName}}"
+pkgname: "mocks"
 recursive: false
 require-template-schema-exists: true
-template: testify
-template-schema: '{{.Template}}.schema.json'
+template: file://mockery/testify_passthrough.templ
+template-schema: "{{.Template}}.schema.json"
 packages:
   github.com/wizards-0/go-pins/migrator/dao:
     config:

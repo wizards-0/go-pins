@@ -14,6 +14,7 @@ import (
 	"github.com/wizards-0/go-pins/logger"
 	"github.com/wizards-0/go-pins/migrator/dao"
 	"github.com/wizards-0/go-pins/migrator/types"
+	"github.com/wizards-0/go-pins/pins"
 	"github.com/wizards-0/go-pins/semver"
 )
 
@@ -27,17 +28,20 @@ type Migrator interface {
 
 func New(db *sqlx.DB, schema string) Migrator {
 	return &migrator{
-		dao: dao.NewMigrationDao(db, schema),
+		db:  db,
+		dao: dao.NewMigrationDao(schema),
 	}
 }
 
-func newMigrator(dao dao.MigrationDao) Migrator {
+func newMigrator(db *sqlx.DB, dao dao.MigrationDao) Migrator {
 	return &migrator{
+		db:  db,
 		dao: dao,
 	}
 }
 
 type migrator struct {
+	db  *sqlx.DB
 	dao dao.MigrationDao
 }
 
@@ -90,8 +94,12 @@ func (m *migrator) parseMigrationArgs(args []string) error {
 	return nil
 }
 
-func (m *migrator) GetMigrationLogs() ([]types.MigrationLog, error) {
-	return m.dao.GetMigrationLogs()
+func (m *migrator) GetMigrationLogs() (mArr []types.MigrationLog, err error) {
+	txErr := pins.WithTx(m.db, func(tx *sqlx.Tx) bool {
+		mArr, err = m.dao.GetMigrationLogs(tx)
+		return err == nil
+	})
+	return mArr, pins.MergeErrors(txErr, err)
 }
 
 func (m *migrator) RunMigrationsFromDirectory(path string) error {
@@ -103,8 +111,14 @@ func (m *migrator) RunMigrationsFromDirectory(path string) error {
 }
 
 func (m *migrator) Migrate(mArr []types.Migration) error {
-	if setupErr := m.dao.SetupMigrationTable(); setupErr != nil {
-		return fmt.Errorf("error while running migrations\n%w", setupErr)
+	var setupErr error
+	txErr := pins.WithTx(m.db, func(tx *sqlx.Tx) bool {
+		setupErr = m.dao.SetupMigrationTable(tx)
+		return setupErr == nil
+	})
+	err := pins.MergeErrors(txErr, setupErr)
+	if err != nil {
+		return fmt.Errorf("error while running migrations\n%w", err)
 	}
 	return m.executeMigrationQueries(mArr)
 }
@@ -122,12 +136,22 @@ func (m *migrator) Rollback(ver string) error {
 			return nil
 		}
 
-		if err := m.dao.ExecuteRollback(mLog.Migration); err != nil {
-			return fmt.Errorf("error while executing rollback query for version '%v'\n%w", ver, err)
-		}
+		var rollbackErr error
+		txErr := pins.WithTx(m.db, func(tx *sqlx.Tx) bool {
+			if err := m.dao.ExecuteRollback(tx, mLog.Migration); err != nil {
+				rollbackErr = fmt.Errorf("error while executing rollback query for version '%v'\n%w", ver, err)
+				return false
+			}
 
-		if err := m.dao.DeleteMigrationLog(mLog); err != nil {
-			return fmt.Errorf("error while deleting migration log\n%w", err)
+			if err := m.dao.DeleteMigrationLog(tx, mLog); err != nil {
+				rollbackErr = fmt.Errorf("error while deleting migration log\n%w", err)
+				return false
+			}
+			return true
+		})
+		err := pins.MergeErrors(txErr, rollbackErr)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -161,38 +185,37 @@ func (migrator migrator) executeMigrationQueries(mArr []types.Migration) error {
 }
 
 func (migrator migrator) executeQuery(m types.Migration, id int, hash string) error {
-	mLog, insertErr := migrator.insertMigrationLog(m, id, hash)
-	if insertErr != nil {
-		return logger.LogError(fmt.Errorf("error while inserting migration log for migration '%v-%v'\n%w", mLog.Version, mLog.Name, insertErr))
-	}
+	var execErr error
+	txErr := pins.WithTx(migrator.db, func(tx *sqlx.Tx) bool {
+		if err := migrator.dao.ExecuteQuery(tx, m); err != nil {
+			execErr = logger.LogError(fmt.Errorf("error while executing query for migration '%v-%v'\n%w", m.Version, m.Name, err))
+			return false
+		}
+		mLog, insertErr := migrator.insertMigrationLog(tx, m, id, hash)
+		if insertErr != nil {
+			execErr = logger.LogError(fmt.Errorf("error while inserting migration log for migration '%v-%v'\n%w", mLog.Version, mLog.Name, insertErr))
+			return false
+		}
+		return true
+	})
 
-	if err := migrator.dao.ExecuteQuery(m); err != nil {
-		mLog.Status = types.MIGRATION_STATUS_FAILED
-		if updateErr := migrator.dao.UpdateMigrationStatus(mLog); updateErr != nil {
-			updateErr = fmt.Errorf("error while marking migration as failed '%v-%v'\n%w", mLog.Version, mLog.Name, updateErr)
-			return logger.LogError(fmt.Errorf(updateErr.Error()+"\n%w", err))
-		}
-		return logger.LogError(fmt.Errorf("error while executing query for migration '%v-%v'\n%w", mLog.Version, mLog.Name, err))
-	} else {
-		mLog.Status = types.MIGRATION_STATUS_SUCCESS
-		if updateErr := migrator.dao.UpdateMigrationStatus(mLog); updateErr != nil {
-			updateErr = fmt.Errorf("error while marking migration as success '%v-%v'\n%w", mLog.Version, mLog.Name, updateErr)
-			return logger.LogError(fmt.Errorf(updateErr.Error()+"\n%w", err))
-		}
-	}
-	return nil
+	return pins.MergeErrors(txErr, execErr)
 }
 
-func (m *migrator) getMigrationVersionMap() (map[string]types.MigrationLog, error) {
-	mLogs, err := m.dao.GetMigrationLogs()
-	if err != nil {
-		return nil, fmt.Errorf("error while getting version migrations map\n %w", err)
-	}
-	mMap := map[string]types.MigrationLog{}
-	for _, mLog := range mLogs {
-		mMap[mLog.Version] = mLog
-	}
-	return mMap, nil
+func (m *migrator) getMigrationVersionMap() (mMap map[string]types.MigrationLog, err error) {
+	txErr := pins.WithTx(m.db, func(tx *sqlx.Tx) bool {
+		mLogs, fetchErr := m.dao.GetMigrationLogs(tx)
+		if fetchErr != nil {
+			err = fmt.Errorf("error while getting version migrations map\n %w", fetchErr)
+			return false
+		}
+		mMap = map[string]types.MigrationLog{}
+		for _, mLog := range mLogs {
+			mMap[mLog.Version] = mLog
+		}
+		return true
+	})
+	return mMap, pins.MergeErrors(txErr, err)
 }
 
 func hashQuery(q string) string {
@@ -211,14 +234,13 @@ func validateHash(m types.MigrationLog, hash string) error {
 	return nil
 }
 
-func (m *migrator) insertMigrationLog(q types.Migration, id int, hash string) (types.MigrationLog, error) {
+func (m *migrator) insertMigrationLog(tx *sqlx.Tx, q types.Migration, id int, hash string) (types.MigrationLog, error) {
 	mLog := types.MigrationLog{}
 	mLog.Id = id
 	mLog.Migration = q
-	mLog.Status = types.MIGRATION_STATUS_STARTED
 	mLog.Date = time.Now().UnixMilli()
 	mLog.Hash = hash
-	err := m.dao.InsertMigrationLog(mLog)
+	err := m.dao.InsertMigrationLog(tx, mLog)
 	if err != nil {
 		return types.MigrationLog{}, fmt.Errorf("error while inserting migration log\n%w", err)
 	}
