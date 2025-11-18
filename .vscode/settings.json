@@ -1,21 +1,22 @@
 {
-    "cSpell.words": [
-        "coverprofile",
-        "davecgh",
-        "difflib",
-        "gopkg",
-        "GOPROXY",
-        "jmoiron",
-        "jojo",
-        "jsonutil",
-        "mattn",
-        "pinutil",
-        "pmezard",
-        "Rowx",
-        "samber",
-        "sqlx",
-        "stretchr",
-        "VARCHAR",
-        "webutil"
-    ]
+  "cSpell.words": [
+    "coverprofile",
+    "davecgh",
+    "difflib",
+    "ginu",
+    "gopkg",
+    "GOPROXY",
+    "jmoiron",
+    "jojo",
+    "jsonutil",
+    "mattn",
+    "pinutil",
+    "pmezard",
+    "Rowx",
+    "samber",
+    "sqlx",
+    "stretchr",
+    "VARCHAR",
+    "webutil"
+  ]
 }

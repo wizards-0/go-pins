@@ -1,0 +1,21 @@
+package ginu
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/wizards-0/go-pins/logger"
+)
+
+func BodyHandler[T any](bodyFactory func() T, fn func(c *gin.Context, reqBody T)) func(c *gin.Context) {
+	body := bodyFactory()
+	return func(c *gin.Context) {
+		if err := json.NewDecoder(c.Request.Body).Decode(&body); err != nil {
+			logger.Error(err)
+			c.String(http.StatusBadRequest, err.Error())
+			return
+		}
+		fn(c, body)
+	}
+}
