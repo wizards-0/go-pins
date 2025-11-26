@@ -22,7 +22,7 @@ func TestFileServe(t *testing.T) {
 	// Valid File
 	srv := gin.Default()
 	srv.GET(path, func(ctx *gin.Context) {
-		File(ctx, filePath)
+		File(ctx, filePath, "")
 	})
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", path, nil)
@@ -40,14 +40,20 @@ func TestFileServe(t *testing.T) {
 
 	// Valid File Second time
 	w = httptest.NewRecorder()
+	srv = gin.Default()
+	srv.GET(path, func(ctx *gin.Context) {
+		File(ctx, filePath, "max-age=60")
+	})
 	req, _ = http.NewRequest("GET", path, nil)
 	srv.ServeHTTP(w, req)
+	respCc := w.Result().Header["Cache-Control"]
 	assert.Equal(http.StatusOK, w.Code)
+	assert.Equal("max-age=60", respCc[0])
 
 	// Invalid file
 	srv = gin.Default()
 	srv.GET(path, func(ctx *gin.Context) {
-		File(ctx, "invalid-path")
+		File(ctx, "invalid-path", "")
 	})
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", path, nil)

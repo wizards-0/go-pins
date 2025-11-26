@@ -3,7 +3,6 @@ package ginu
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"mime"
 	"net/http"
 	"os"
@@ -22,10 +21,8 @@ type staticFile struct {
 
 var cacheMutex sync.RWMutex
 var fileCache = map[string]staticFile{}
-var cacheMaxAge = 3600 * 24 * 7 // 7 days
-var cacheControl = fmt.Sprintf("public, max-age=%v", cacheMaxAge)
 
-func File(ctx *gin.Context, filePath string) {
+func File(ctx *gin.Context, filePath string, cacheControl string) {
 	cacheMutex.RLock()
 	file, found := fileCache[filePath]
 	cacheMutex.RUnlock()
@@ -49,8 +46,11 @@ func File(ctx *gin.Context, filePath string) {
 		fileCache[filePath] = file
 		cacheMutex.Unlock()
 	}
+	if cacheControl == "" {
+		cacheControl = "no-cache"
+	}
 	ctx.Header("Cache-Control", cacheControl)
-	ctx.Header("ETag", file.eTag)
+	ctx.Header("Etag", file.eTag)
 	if ctx.GetHeader("If-None-Match") != file.eTag {
 		ctx.Header("Content-Type", file.mimeType)
 		ctx.Writer.Write(file.data)
