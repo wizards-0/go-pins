@@ -35,7 +35,7 @@ func TestBodyHandler(t *testing.T) {
 func TestResponseHandler(t *testing.T) {
 	assert := assert.New(t)
 
-	// 1. Success with JSON response
+	// Success with JSON response
 	srv := gin.Default()
 	srv.POST(path, BodyHandler(newMigration, func(c *gin.Context, reqBody types.Migration) {
 		SendResponseWithStatus(c, http.StatusAccepted, reqBody, nil)
@@ -48,7 +48,7 @@ func TestResponseHandler(t *testing.T) {
 	assert.Equal(http.StatusAccepted, w.Code)
 	assert.Equal(json, w.Body.Bytes())
 
-	// 2. Success with String response
+	// Success with String response
 	srv = gin.Default()
 	srv.POST(path, BodyHandler(newMigration, func(c *gin.Context, reqBody types.Migration) {
 		SendResponse(c, "done", nil)
@@ -59,7 +59,7 @@ func TestResponseHandler(t *testing.T) {
 	assert.Equal(http.StatusOK, w.Code)
 	assert.Equal("done", w.Body.String())
 
-	// 3. Auth error
+	// Auth error
 	srv = gin.Default()
 	srv.POST(path, BodyHandler(newMigration, func(c *gin.Context, reqBody types.Migration) {
 		SendResponse(c, "done", fmt.Errorf("Unauthorized user"))
@@ -70,7 +70,18 @@ func TestResponseHandler(t *testing.T) {
 	assert.Equal(http.StatusUnauthorized, w.Code)
 	assert.Equal("Unauthorized user", w.Body.String())
 
-	// 4. Random error
+	// Not Found
+	srv = gin.Default()
+	srv.POST(path, BodyHandler(newMigration, func(c *gin.Context, reqBody types.Migration) {
+		SendResponse(c, "done", fmt.Errorf("entity not found"))
+	}))
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", path, bytes.NewReader(json))
+	srv.ServeHTTP(w, req)
+	assert.Equal(http.StatusNotFound, w.Code)
+	assert.Equal("entity not found", w.Body.String())
+
+	// Random error
 	srv = gin.Default()
 	srv.POST(path, BodyHandler(newMigration, func(c *gin.Context, reqBody types.Migration) {
 		SendResponse(c, "done", fmt.Errorf("server cooked"))

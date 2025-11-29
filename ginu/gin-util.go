@@ -29,6 +29,8 @@ func SendResponseWithStatus(ctx *gin.Context, status int, resp any, err error) {
 	if err != nil {
 		if strings.Contains(err.Error(), "auth") {
 			status = http.StatusUnauthorized
+		} else if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
 		} else {
 			status = http.StatusInternalServerError
 		}
