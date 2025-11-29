@@ -301,7 +301,7 @@ func TestInValidRollbackArgs(t *testing.T) {
 	assert := assert.New(t)
 	setup()
 	defer tearDown()
-	pins.WithTx(db, func(tx *sqlx.Tx) bool {
+	pins.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		mDao.SetupMigrationTable(tx)
 		return true
 	})
@@ -330,7 +330,7 @@ func TestParseRollbackArgsFetchError(t *testing.T) {
 	assert := assert.New(t)
 	setup()
 	defer tearDown()
-	pins.WithTx(db, func(tx *sqlx.Tx) bool {
+	pins.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		mDao.SetupMigrationTable(tx)
 		return true
 	})

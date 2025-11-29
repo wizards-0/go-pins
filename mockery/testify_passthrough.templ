@@ -55,7 +55,7 @@ type {{.StructName}}_Expecter{{ $mock.TypeConstraint }} struct {
 	mock *mock.Mock
 }
 
-var passThroughMap = map[string]func(_mock *{{$mock.StructName}}{{ $mock.TypeInstantiation }}){
+var mock{{ $mock.Name }}PassThroughMap = map[string]func(_mock *{{$mock.StructName}}{{ $mock.TypeInstantiation }}){
 {{/* RANGE OVER ALL METHODS */}}
 {{- range $methodIdx, $method := .Methods }} {{/* START METHOD RANGE */}}
     "{{$method.Name}}": func(mock{{ $mock.Name }} *{{$mock.StructName}}{{ $mock.TypeInstantiation }}){
@@ -64,7 +64,11 @@ var passThroughMap = map[string]func(_mock *{{$mock.StructName}}{{ $mock.TypeIns
             mock.Anything,
             {{- end }}
         ).RunAndReturn(func {{$method.Signature}} {
-            return mock{{ $mock.Name }}.orig.{{$method.Call}}
+			{{- if eq (len $method.Returns) 0 }}
+            mock{{ $mock.Name }}.orig.{{$method.Call}}
+			{{- else }}
+			return mock{{ $mock.Name }}.orig.{{$method.Call}}
+			{{- end }}
         }).Once()
     },
 {{- end }}
@@ -73,7 +77,7 @@ var passThroughMap = map[string]func(_mock *{{$mock.StructName}}{{ $mock.TypeIns
 
 func (_mock *{{$mock.StructName}}{{ $mock.TypeInstantiation }}) PassThrough(methodNames ...string) {
 	for _, name := range methodNames {
-		fn, exists := passThroughMap[name]
+		fn, exists := mock{{ $mock.Name }}PassThroughMap[name]
 		if exists {
 			fn(_mock)
 		}

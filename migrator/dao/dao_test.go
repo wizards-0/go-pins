@@ -18,7 +18,7 @@ var dao MigrationDao
 func setup() {
 	db = getDbConnection()
 	dao = NewMigrationDao("")
-	pins.WithTx(db, func(tx *sqlx.Tx) bool {
+	pins.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		dao.SetupMigrationTable(tx)
 		return true
 	})
@@ -34,7 +34,7 @@ func TestCrud(t *testing.T) {
 	var l1o1 = types.MigrationLog{Id: 2, Migration: types.Migration{Name: "Add Column", Version: "1-1"}}
 	var l2 = types.MigrationLog{Id: 3, Migration: types.Migration{Name: "Create test table2", Version: "2"}}
 
-	pins.WithTx(db, func(tx *sqlx.Tx) bool {
+	pins.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		_ = dao.InsertMigrationLog(tx, l1o1)
 		_ = dao.InsertMigrationLog(tx, l2)
 		_ = dao.InsertMigrationLog(tx, l1)
@@ -55,7 +55,7 @@ func TestCrud(t *testing.T) {
 func TestSetupError(t *testing.T) {
 	assert := assert.New(t)
 	setup()
-	pins.WithTx(db, func(tx *sqlx.Tx) bool {
+	pins.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		tx.Rollback()
 		err := dao.SetupMigrationTable(tx)
 		assert.ErrorContains(err, "error in creating migration_log table")
@@ -66,7 +66,7 @@ func TestSetupError(t *testing.T) {
 func TestGetMigrationLogsError(t *testing.T) {
 	assert := assert.New(t)
 	setup()
-	pins.WithTx(db, func(tx *sqlx.Tx) bool {
+	pins.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		tx.Rollback()
 		_, err := dao.GetMigrationLogs(tx)
 		assert.ErrorContains(err, "error while getting migration logs")
@@ -77,7 +77,7 @@ func TestGetMigrationLogsError(t *testing.T) {
 func TestInsertMigrationLogsError(t *testing.T) {
 	assert := assert.New(t)
 	setup()
-	pins.WithTx(db, func(tx *sqlx.Tx) bool {
+	pins.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		tx.Rollback()
 		err := dao.InsertMigrationLog(tx, types.MigrationLog{})
 		assert.ErrorContains(err, "error in database while inserting migration log")
@@ -88,7 +88,7 @@ func TestInsertMigrationLogsError(t *testing.T) {
 func TestDeleteMigrationLogError(t *testing.T) {
 	assert := assert.New(t)
 	setup()
-	pins.WithTx(db, func(tx *sqlx.Tx) bool {
+	pins.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		tx.Rollback()
 		err := dao.DeleteMigrationLog(tx, types.MigrationLog{})
 		assert.ErrorContains(err, "error while deleting migration log")
@@ -99,7 +99,7 @@ func TestDeleteMigrationLogError(t *testing.T) {
 func TestExecQuery(t *testing.T) {
 	assert := assert.New(t)
 	setup()
-	pins.WithTx(db, func(tx *sqlx.Tx) bool {
+	pins.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		err := dao.ExecuteQuery(tx, types.Migration{Query: "CREATE TABLE USER(ID INT,NAME TEXT)"})
 		assert.Nil(err)
 		_, err = tx.Exec("SELECT * FROM USER")
@@ -114,7 +114,7 @@ func TestExecQuery(t *testing.T) {
 func TestRollback(t *testing.T) {
 	assert := assert.New(t)
 	setup()
-	pins.WithTx(db, func(tx *sqlx.Tx) bool {
+	pins.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		err := dao.ExecuteRollback(tx, types.Migration{Rollback: "DROP TABLE IF EXISTS USER"})
 		assert.Nil(err)
 		tx.Rollback()

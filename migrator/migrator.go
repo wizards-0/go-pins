@@ -95,7 +95,7 @@ func (m *migrator) parseMigrationArgs(args []string) error {
 }
 
 func (m *migrator) GetMigrationLogs() (mArr []types.MigrationLog, err error) {
-	txErr := pins.WithTx(m.db, func(tx *sqlx.Tx) bool {
+	txErr := pins.WithDefaultCtxTx(m.db, func(tx *sqlx.Tx) bool {
 		mArr, err = m.dao.GetMigrationLogs(tx)
 		return err == nil
 	})
@@ -112,7 +112,7 @@ func (m *migrator) RunMigrationsFromDirectory(path string) error {
 
 func (m *migrator) Migrate(mArr []types.Migration) error {
 	var setupErr error
-	txErr := pins.WithTx(m.db, func(tx *sqlx.Tx) bool {
+	txErr := pins.WithDefaultCtxTx(m.db, func(tx *sqlx.Tx) bool {
 		setupErr = m.dao.SetupMigrationTable(tx)
 		return setupErr == nil
 	})
@@ -137,7 +137,7 @@ func (m *migrator) Rollback(ver string) error {
 		}
 
 		var rollbackErr error
-		txErr := pins.WithTx(m.db, func(tx *sqlx.Tx) bool {
+		txErr := pins.WithDefaultCtxTx(m.db, func(tx *sqlx.Tx) bool {
 			if err := m.dao.ExecuteRollback(tx, mLog.Migration); err != nil {
 				rollbackErr = fmt.Errorf("error while executing rollback query for version '%v'\n%w", ver, err)
 				return false
@@ -186,7 +186,7 @@ func (migrator migrator) executeMigrationQueries(mArr []types.Migration) error {
 
 func (migrator migrator) executeQuery(m types.Migration, id int, hash string) error {
 	var execErr error
-	txErr := pins.WithTx(migrator.db, func(tx *sqlx.Tx) bool {
+	txErr := pins.WithDefaultCtxTx(migrator.db, func(tx *sqlx.Tx) bool {
 		if err := migrator.dao.ExecuteQuery(tx, m); err != nil {
 			execErr = logger.LogError(fmt.Errorf("error while executing query for migration '%v-%v'\n%w", m.Version, m.Name, err))
 			return false
@@ -203,7 +203,7 @@ func (migrator migrator) executeQuery(m types.Migration, id int, hash string) er
 }
 
 func (m *migrator) getMigrationVersionMap() (mMap map[string]types.MigrationLog, err error) {
-	txErr := pins.WithTx(m.db, func(tx *sqlx.Tx) bool {
+	txErr := pins.WithDefaultCtxTx(m.db, func(tx *sqlx.Tx) bool {
 		mLogs, fetchErr := m.dao.GetMigrationLogs(tx)
 		if fetchErr != nil {
 			err = fmt.Errorf("error while getting version migrations map\n %w", fetchErr)

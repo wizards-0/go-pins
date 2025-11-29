@@ -2,6 +2,7 @@ package pins
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -85,22 +86,22 @@ func TestWithTx(t *testing.T) {
 	l2 := types.MigrationLog{Id: 3, Migration: types.Migration{Name: "Create test table2", Version: "2"}}
 	var mLogs []types.MigrationLog
 
-	WithTx(db, func(tx *sqlx.Tx) bool {
+	WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		mDao.SetupMigrationTable(tx)
 		mDao.InsertMigrationLog(tx, l1)
 		return true
 	})
-	WithTx(db, func(tx *sqlx.Tx) bool {
+	WithRoTx(context.Background(), db, func(tx *sqlx.Tx) bool {
 		mLogs, _ = mDao.GetMigrationLogs(tx)
 		return true
 	})
 	assert.Equal(1, len(mLogs))
 
-	WithTx(db, func(tx *sqlx.Tx) bool {
+	WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		mDao.InsertMigrationLog(tx, l2)
 		return false
 	})
-	WithTx(db, func(tx *sqlx.Tx) bool {
+	WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		mLogs, _ = mDao.GetMigrationLogs(tx)
 		return true
 	})
@@ -112,7 +113,7 @@ func TestWithTxBeginError(t *testing.T) {
 	db := getDbConnection()
 	db.Close()
 
-	txErr := WithTx(db, func(tx *sqlx.Tx) bool {
+	txErr := WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		return true
 	})
 	assert.ErrorContains(txErr, "error in starting transaction")
@@ -122,7 +123,7 @@ func TestWithTxCommitError(t *testing.T) {
 	assert := assert.New(t)
 	db := getDbConnection()
 	defer db.Close()
-	txErr := WithTx(db, func(tx *sqlx.Tx) bool {
+	txErr := WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		tx.Rollback()
 		return true
 	})
@@ -133,7 +134,7 @@ func TestWithTxRollbackError(t *testing.T) {
 	assert := assert.New(t)
 	db := getDbConnection()
 	defer db.Close()
-	txErr := WithTx(db, func(tx *sqlx.Tx) bool {
+	txErr := WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		tx.Rollback()
 		return false
 	})

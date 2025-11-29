@@ -58,3 +58,7 @@ func File(ctx *gin.Context, filePath string, cacheControl string) {
 		ctx.Status(http.StatusNotModified)
 	}
 }
+
+func ClearFileServerCache() {
+	clear(fileCache)
+}
