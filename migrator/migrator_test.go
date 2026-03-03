@@ -14,7 +14,7 @@ import (
 	"github.com/wizards-0/go-pins/migrator/dao"
 	"github.com/wizards-0/go-pins/migrator/types"
 	mocks "github.com/wizards-0/go-pins/mocks/migrator/dao"
-	"github.com/wizards-0/go-pins/pins"
+	"github.com/wizards-0/go-pins/slu"
 )
 
 var TYPE_MIGRATION_LOG = mock.AnythingOfType("types.MigrationLog")
@@ -301,7 +301,7 @@ func TestInValidRollbackArgs(t *testing.T) {
 	assert := assert.New(t)
 	setup()
 	defer tearDown()
-	pins.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
+	slu.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		mDao.SetupMigrationTable(tx)
 		return true
 	})
@@ -330,7 +330,7 @@ func TestParseRollbackArgsFetchError(t *testing.T) {
 	assert := assert.New(t)
 	setup()
 	defer tearDown()
-	pins.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
+	slu.WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
 		mDao.SetupMigrationTable(tx)
 		return true
 	})

@@ -2,17 +2,12 @@ package pins
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/wizards-0/go-pins/logger"
-	"github.com/wizards-0/go-pins/migrator/dao"
-	"github.com/wizards-0/go-pins/migrator/types"
 )
 
 func TestPanic(t *testing.T) {
@@ -77,70 +72,6 @@ func TestAppend(t *testing.T) {
 
 }
 
-func TestWithTx(t *testing.T) {
-	assert := assert.New(t)
-	db := getDbConnection()
-	defer db.Close()
-	mDao := dao.NewMigrationDao("")
-	l1 := types.MigrationLog{Id: 1, Migration: types.Migration{Name: "Create test table", Version: "1"}}
-	l2 := types.MigrationLog{Id: 3, Migration: types.Migration{Name: "Create test table2", Version: "2"}}
-	var mLogs []types.MigrationLog
-
-	WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
-		mDao.SetupMigrationTable(tx)
-		mDao.InsertMigrationLog(tx, l1)
-		return true
-	})
-	WithRoTx(context.Background(), db, func(tx *sqlx.Tx) bool {
-		mLogs, _ = mDao.GetMigrationLogs(tx)
-		return true
-	})
-	assert.Equal(1, len(mLogs))
-
-	WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
-		mDao.InsertMigrationLog(tx, l2)
-		return false
-	})
-	WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
-		mLogs, _ = mDao.GetMigrationLogs(tx)
-		return true
-	})
-	assert.Equal(1, len(mLogs))
-}
-
-func TestWithTxBeginError(t *testing.T) {
-	assert := assert.New(t)
-	db := getDbConnection()
-	db.Close()
-
-	txErr := WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
-		return true
-	})
-	assert.ErrorContains(txErr, "error in starting transaction")
-}
-
-func TestWithTxCommitError(t *testing.T) {
-	assert := assert.New(t)
-	db := getDbConnection()
-	defer db.Close()
-	txErr := WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
-		tx.Rollback()
-		return true
-	})
-	assert.ErrorContains(txErr, "error in committing transaction")
-}
-
-func TestWithTxRollbackError(t *testing.T) {
-	assert := assert.New(t)
-	db := getDbConnection()
-	defer db.Close()
-	txErr := WithDefaultCtxTx(db, func(tx *sqlx.Tx) bool {
-		tx.Rollback()
-		return false
-	})
-	assert.ErrorContains(txErr, "error in rolling back transaction")
-}
-
 func TestMergeError(t *testing.T) {
 	assert := assert.New(t)
 	assert.Nil(MergeErrors(nil))
@@ -154,12 +85,4 @@ func TestMergeError(t *testing.T) {
 	assert.ErrorContains(MergeErrors(e1, nil), "msg1")
 	assert.ErrorContains(MergeErrors(nil, e1, nil), "msg1")
 	assert.ErrorContains(MergeErrors(e1, nil, e3), "msg1. msg3")
-}
-
-func getDbConnection() *sqlx.DB {
-	db, err := sqlx.Open("sqlite3", "file:test-db?mode=memory&cache=shared")
-	if err != nil {
-		panic(err)
-	}
-	return db
 }
